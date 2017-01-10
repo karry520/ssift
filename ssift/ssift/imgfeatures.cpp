@@ -1,14 +1,38 @@
-/**
- *
- * */
+/*****************************************************************************
+Copyright: 2016-2017, Likaiyun
+File name: imgfeatures.cpp
+Description: 特征点重要结构
+Author: 李开运
+Version: 0.1
+Date: 完成日期
+History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
+*****************************************************************************/
+
 #include "utils.h"
 #include "imgfeatures.h"
 
 #include <cxcore.h>
 
 #include <math.h>
+
+/*********************************本地函数申明*******************************/
 static void draw_liuli_feature(IplImage* ,struct  feature* ,CvScalar );
 
+/****************************函数定义imgfeatures.h***************************/
+/*****************************************************************************
+Function:		// draw_liuli_features
+Description:	// 在图像中画出特征点
+Calls:			// draw_liuli_feature
+Called By:		// imgFeat.main
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @img		被提取特征点的图像
+				// @feat	存储特征点的序列
+				// @n		特征点数量
+Output:			// 无
+Return:			// 无
+Others:			// 无
+*****************************************************************************/
 static void draw_liuli_features(IplImage* img,struct feature* feat,int n)
 {
 	CvScalar color = CV_RGB( 255, 255, 255);
@@ -21,7 +45,20 @@ static void draw_liuli_features(IplImage* img,struct feature* feat,int n)
 		draw_liuli_feature( img, feat + i, color);
 	}
 }
-
+/*****************************************************************************
+Function:		// draw_liuli_feature
+Description:	// 在图像中画出特征点
+Calls:			// cvLine、cvRound、cvPoint
+Called By:		// draw_liuli_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @img		被提取特征点的图像
+				// @feat	存储特征点的序列
+				// @n		特征点颜色 
+Output:			// 无
+Return:			// 无
+Others:			// 无
+*****************************************************************************/
 static void draw_liuli_feature(IplImage* img,struct  feature* feat,CvScalar color)
 {
 	int len, hlen, blen, start_x, start_y, end_x, end_y, h1_x, h1_y, h2_x, h2_y;
