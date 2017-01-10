@@ -81,6 +81,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="imgfeatures.h" />
+    <ClInclude Include="ssift.h" />
+    <ClInclude Include="utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="imgFeat.cpp" />
+    <ClCompile Include="imgfeatures.cpp" />
+    <ClCompile Include="ssift.cpp" />
+    <ClCompile Include="utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="..\..\..\..\..\Desktop\资料文档\sift学习资料汇总\sift\sift-latest_win\sift-1.1.2_20101207_win\beaver.png" />
+    <Image Include="..\..\..\..\..\Desktop\资料文档\sift学习资料汇总\sift\sift-latest_win\sift-1.1.2_20101207_win\beaver_xform.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
