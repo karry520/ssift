@@ -66,16 +66,16 @@ static struct feature* clone_feature( struct feature* );
 //计算特征描述子向量
 static void compute_descriptors( CvSeq*, IplImage***);
 //计算特征点附近区域的方向直方图
-static double*** descr_hist( IplImage*, int, int, double, double, int, int );
+static double* descr_hist( IplImage*, int, int, double);
 static void interp_hist_entry( double***, double, double, double, double, int, int);
 //将关键点邻域统计梯度梯度直方图转化为描述子向量
-static void hist_to_descr( double***, int, int, struct feature* );
+static void hist_to_descr( double*,struct feature* );
 //归一化描述子向量
 static void normalize_descr( struct feature* );
 //特征点按尺度的降序排列时用到的比较函数
 static int feature_cmp( void*, void*, void* );
 //释放方向直方图存储空间
-static void release_descr_hist( double****, int );
+static void release_descr_hist( double* );
 //释放图像金字塔存储空间
 static void release_pyr( IplImage****, int, int );
 
@@ -153,13 +153,24 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	storage = cvCreateMemStorage( 0 );
 	features = scale_space_extrema( dog_pyr, octvs, intvls, contr_thr,
 		curv_thr, storage );
+	n = features->total;
 	calc_feature_scales( features, sigma, intvls );
 	if( img_dbl )
 		adjust_for_img_dbl( features );
 
 	//第二步：特征向量
-	compute_descriptors( features, gauss_pyr );
+	//compute_descriptors( features, gauss_pyr );
+	calc_feature_oris( features, gauss_pyr );
 
+	cvSeqSort( features, (CvCmpFunc)feature_cmp, NULL );
+	n = features->total;
+	*feat = (feature*)calloc( n, sizeof(struct feature) );
+	*feat = (feature*)cvCvtSeqToArray( features, *feat, CV_WHOLE_SEQ );
+	for( i = 0; i < n; i++ )
+	{
+		free( (*feat)[i].feature_data );
+		(*feat)[i].feature_data = NULL;
+	}
 	//释放内存空间
 	cvReleaseMemStorage( &storage );
 	cvReleaseImage( &init_img );
@@ -767,4 +778,479 @@ static int is_too_edge_like( IplImage* dog_img, int r, int c, int curv_thr )
 	if( tr * tr / det < ( curv_thr + 1.0 )*( curv_thr + 1.0 ) / curv_thr )
 		return 0;
 	return 1;
+}
+
+/*****************************************************************************
+Function:		// calc_feature_scales
+Description:	// 计算特征点的尺度
+Calls:			// CV_GET_SEQ_ELEM
+Called By:		// _ssift_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @features	特征点序列
+				// @sigma		图像初始尺度
+				// @intvls		每组分intvls层
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
+static void calc_feature_scales( CvSeq* features, double sigma, int intvls )
+{
+	struct feature* feat;
+	struct detection_data* ddata;
+	double intvl;
+	int i, n;
+
+	n = features->total;
+	for( i = 0; i < n; i++ )
+	{
+		feat = CV_GET_SEQ_ELEM( struct feature, features, i );
+		ddata = feat_detection_data( feat );
+		intvl = ddata->intvl + ddata->subintvl;
+		feat->scale = sigma * pow( 2.0, ddata->octv + intvl / intvls );
+		ddata->scl_octv = sigma * pow( 2.0, intvl / intvls );
+	}
+}
+
+/*****************************************************************************
+Function:		// adjust_for_img_dbl
+Description:	// 缩小1倍图片的参数
+Calls:			// CV_GET_SEQ_ELEM
+Called By:		// _ssift_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @features	特征点序列
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
+static void adjust_for_img_dbl( CvSeq* features )
+{
+	struct feature* feat;
+	int i, n;
+
+  	n = features->total;
+  	for( i = 0; i < n; i++ )
+    {
+    	//从序列中获取一个feature类型的元素
+      	feat = CV_GET_SEQ_ELEM( struct feature, features, i );
+      	feat->x /= 2.0;
+      	feat->y /= 2.0;
+		feat->scale /= 2.0;
+		feat->img_point.x /= 2.0;
+		feat->img_point.y /= 2.0;
+    }
+}
+
+static void calc_feature_oris( CvSeq* features, IplImage*** gauss_pyr )
+{
+	struct feature* feat;
+	struct detection_data* ddata;
+	double* hist;
+	double omax;
+	int i, j, n = features->total;
+
+	for( i = 0; i < n; i++ )
+	{
+		feat = (feature*)malloc( sizeof( struct feature ) );
+		cvSeqPopFront( features, feat );
+		ddata = feat_detection_data( feat );
+		hist = ori_hist( gauss_pyr[ddata->octv][ddata->intvl],
+						ddata->r, ddata->c, SSIFT_ORI_HIST_BINS,
+						cvRound( SSIFT_ORI_RADIUS * ddata->scl_octv ),
+						SSIFT_ORI_SIG_FCTR * ddata->scl_octv );
+		for( j = 0; j < SSIFT_ORI_SMOOTH_PASSES; j++ )
+			smooth_ori_hist( hist, SSIFT_ORI_HIST_BINS );
+		omax = dominant_ori( hist, SSIFT_ORI_HIST_BINS );
+		add_good_ori_features( features, hist, SSIFT_ORI_HIST_BINS,
+								omax * SSIFT_ORI_PEAK_RATIO, feat );
+		free( ddata );
+		free( feat );
+		free( hist );
+	}
+}
+
+
+
+/*
+Computes a gradient orientation histogram at a specified pixel.
+
+@param img image
+@param r pixel row
+@param c pixel col
+@param n number of histogram bins
+@param rad radius of region over which histogram is computed
+@param sigma std for Gaussian weighting of histogram entries
+
+@return Returns an n-element array containing an orientation histogram
+	representing orientations between 0 and 2 PI.
+*/
+static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sigma)
+{
+	double* hist;
+	double mag, ori, w, exp_denom, PI2 = CV_PI * 2.0;
+	int bin, i, j;
+
+	hist = (double*)calloc( n, sizeof( double ) );
+	exp_denom = 2.0 * sigma * sigma;
+	for( i = -rad; i <= rad; i++ )
+		for( j = -rad; j <= rad; j++ )
+			if( calc_grad_mag_ori( img, r + i, c + j, &mag, &ori ) )
+			{
+				w = exp( -( i*i + j*j ) / exp_denom );
+				bin = cvRound( n * ( ori + CV_PI ) / PI2 );
+				bin = ( bin < n )? bin : 0;
+				hist[bin] += w * mag;
+			}
+
+	return hist;
+}
+
+
+
+/*
+Calculates the gradient magnitude and orientation at a given pixel.
+
+@param img image
+@param r pixel row
+@param c pixel col
+@param mag output as gradient magnitude at pixel (r,c)
+@param ori output as gradient orientation at pixel (r,c)
+
+@return Returns 1 if the specified pixel is a valid one and sets mag and
+	ori accordingly; otherwise returns 0
+*/
+static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* ori )
+{
+	double dx, dy;
+
+	if( r > 0  &&  r < img->height - 1  &&  c > 0  &&  c < img->width - 1 )
+	{
+		dx = pixval32f( img, r, c+1 ) - pixval32f( img, r, c-1 );
+		dy = pixval32f( img, r-1, c ) - pixval32f( img, r+1, c );
+		*mag = sqrt( dx*dx + dy*dy );
+		*ori = atan2( dy, dx );
+		return 1;
+	}
+
+	else
+		return 0;
+}
+
+
+
+/*
+Gaussian smooths an orientation histogram.
+
+@param hist an orientation histogram
+@param n number of bins
+*/
+static void smooth_ori_hist( double* hist, int n )
+{
+	double prev, tmp, h0 = hist[0];
+	int i;
+
+	prev = hist[n-1];
+	for( i = 0; i < n; i++ )
+	{
+		tmp = hist[i];
+		hist[i] = 0.25 * prev + 0.5 * hist[i] + 
+			0.25 * ( ( i+1 == n )? h0 : hist[i+1] );
+		prev = tmp;
+	}
+}
+
+
+
+/*
+Finds the magnitude of the dominant orientation in a histogram
+
+@param hist an orientation histogram
+@param n number of bins
+
+@return Returns the value of the largest bin in hist
+*/
+static double dominant_ori( double* hist, int n )
+{
+	double omax;
+	int maxbin, i;
+
+	omax = hist[0];
+	maxbin = 0;
+	for( i = 1; i < n; i++ )
+		if( hist[i] > omax )
+		{
+			omax = hist[i];
+			maxbin = i;
+		}
+	return omax;
+}
+
+
+
+/*
+Interpolates a histogram peak from left, center, and right values
+*/
+#define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
+
+
+
+/*
+Adds features to an array for every orientation in a histogram greater than
+a specified threshold.
+
+@param features new features are added to the end of this array
+@param hist orientation histogram
+@param n number of bins in hist
+@param mag_thr new features are added for entries in hist greater than this
+@param feat new features are clones of this with different orientations
+*/
+static void add_good_ori_features( CvSeq* features, double* hist, int n,
+								   double mag_thr, struct feature* feat )
+{
+	struct feature* new_feat;
+	double bin, PI2 = CV_PI * 2.0;
+	int l, r, i;
+
+	for( i = 0; i < n; i++ )
+	{
+		l = ( i == 0 )? n - 1 : i-1;
+		r = ( i + 1 ) % n;
+
+		if( hist[i] > hist[l]  &&  hist[i] > hist[r]  &&  hist[i] >= mag_thr )
+		{
+			bin = i + interp_hist_peak( hist[l], hist[i], hist[r] );
+			bin = ( bin < 0 )? n + bin : ( bin >= n )? bin - n : bin;
+			new_feat = clone_feature( feat );
+			new_feat->orientation = ( ( PI2 * bin ) / n ) - CV_PI;
+			cvSeqPush( features, new_feat );
+			free( new_feat );
+		}
+	}
+}
+
+
+
+/*
+Makes a deep copy of a feature
+
+@param feat feature to be cloned
+
+@return Returns a deep copy of feat
+*/
+static struct feature* clone_feature( struct feature* feat )
+{
+	struct feature* new_feat;
+	struct detection_data* ddata;
+
+	new_feat = new_feature();
+	ddata = feat_detection_data( new_feat );
+	memcpy( new_feat, feat, sizeof( struct feature ) );
+	memcpy( ddata, feat_detection_data(feat), sizeof( struct detection_data ) );
+	new_feat->feature_data = ddata;
+
+	return new_feat;
+}
+/*
+static void compute_descriptors( CvSeq* features, IplImage*** gauss_pyr)
+{
+	struct feature* feat;
+	struct detection_data* ddata;
+	double omax;
+    double* hist;
+    int  k = features->total;
+
+  	for(int i = 0; i < k; i++ )
+    {
+		feat = (feature*)malloc( sizeof( struct feature ) );
+    	//从关键点序列中取一个关键点
+      	cvSeqPopFront( features, feat );
+      	ddata = feat_detection_data( feat );
+      	//计算邻域梯度直方图
+      	hist = descr_hist( gauss_pyr[ddata->octv][ddata->intvl], ddata->r,
+			ddata->c, ddata->scl_octv);
+
+		//对梯度直方图进行高斯平滑
+      	for( int j = 0; j < SSIFT_ORI_SMOOTH_PASSES; j++ )
+			smooth_ori_hist( hist, SSIFT_ORI_HIST_BINS );
+		omax = dominant_ori( hist, SSIFT_ORI_HIST_BINS );
+		//添加大于主方向峰值80%的方向，作为关键点的辅方向
+      	add_good_ori_features( features, hist, SSIFT_ORI_HIST_BINS,
+			     omax * SSIFT_ORI_PEAK_RATIO, feat );
+      	//将梯度直方图转换成描述子向量
+      	hist_to_descr( hist,feat );
+      	//释放空间
+      	//release_descr_hist( hist );
+    }
+}
+
+static double* descr_hist( IplImage* img, int r, int c, double scl_octv)
+{
+	double* hist;
+	double mag,ori,w,exp_denom,PI2 = CV_PI *2.0;
+	int radius ,bin;
+    //分配空间
+	hist = (double*)calloc( 12, sizeof( double ) );
+	//统计半径
+	radius = cvRound( SSIFT_ORI_RADIUS * scl_octv );
+
+	exp_denom = 2 * SSIFT_ORI_SIG_FCTR * scl_octv * SSIFT_ORI_SIG_FCTR * scl_octv;
+	//统计范围内
+	for (int i = -radius; i <= radius; i++)
+	{
+		int tmp = cvRound( sqrt( radius * radius - i * i ) );
+		for (int j = -tmp; j <= tmp; j++)
+		{
+			if (calc_grad_mag_ori( img, r + i, c + j, &mag, &ori ) )
+			{
+				w = exp( -( i * i + j * j ) / exp_denom );
+				bin = cvRound( SSIFT_ORI_HIST_BINS * ( ori + CV_PI ) / PI2 );
+				bin = ( bin < SSIFT_ORI_HIST_BINS )? bin : 0;
+				//直方统计
+				hist[bin] += w * mag;
+			}
+		}
+	}
+	return hist;
+}
+
+static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* ori )
+{
+	double dx, dy;
+
+	if( r > 0  &&  r < img->height - 1  &&  c > 0  &&  c < img->width - 1 )
+	{
+		dx = pixval32f( img, r, c+1 ) - pixval32f( img, r, c-1 );
+		dy = pixval32f( img, r-1, c ) - pixval32f( img, r+1, c );
+		*mag = sqrt( dx*dx + dy*dy );
+		*ori = atan2( dy, dx );
+		return 1;
+	}
+
+	else
+		return 0;
+}
+
+static void smooth_ori_hist( double* hist, int n )
+{
+	double prev, tmp, h0 = hist[0];
+	int i;
+
+	prev = hist[n-1];
+	for( i = 0; i < n; i++ )
+	{
+		tmp = hist[i];
+		hist[i] = 0.25 * prev + 0.5 * hist[i] + 
+			0.25 * ( ( i+1 == n )? h0 : hist[i+1] );
+		prev = tmp;
+	}
+}
+
+static double dominant_ori( double* hist, int n )
+{
+	double omax;
+	int maxbin;
+	double cp[12] = { 0 };
+	omax = hist[0];
+	maxbin = 0;
+	for( int i = 1; i < n; i++ )
+		if( hist[i] > omax )
+		{
+			omax = hist[i];
+			maxbin = i;
+		}
+	//将最大值前的数据暂存至cp中
+	for (int j = 0; j < maxbin; j++)
+	{
+		cp[j] = hist[j];
+	}
+	for (int k = 0; k < n; k++)
+	{
+		if ( k < maxbin && k < n)
+		{
+			hist[k] = hist[k+maxbin];
+		}
+		else
+		{
+			hist[k] = cp[k-maxbin];
+		}
+	}
+	return hist[0];
+}
+
+#define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
+
+
+static void add_good_ori_features( CvSeq* features, double* hist, int n,
+								   double mag_thr, struct feature* feat )
+{
+	struct feature* new_feat;
+	double bin, PI2 = CV_PI * 2.0;
+	int l, r, i;
+
+	for( i = 0; i < n; i++ )
+	{
+		l = ( i == 0 )? n - 1 : i-1;
+		r = ( i + 1 ) % n;
+
+		if( hist[i] > hist[l]  &&  hist[i] > hist[r]  &&  hist[i] >= mag_thr )
+		{
+			bin = i + interp_hist_peak( hist[l], hist[i], hist[r] );
+			bin = ( bin < 0 )? n + bin : ( bin >= n )? bin - n : bin;
+			new_feat = clone_feature( feat );
+			new_feat->orientation = ( ( PI2 * bin ) / n ) - CV_PI;
+			cvSeqPush( features, new_feat );
+			free( new_feat );
+		}
+	}
+}
+
+static struct feature* clone_feature( struct feature* feat )
+{
+	struct feature* new_feat;
+	struct detection_data* ddata;
+
+	new_feat = new_feature();
+	ddata = feat_detection_data( new_feat );
+	memcpy( new_feat, feat, sizeof( struct feature ) );
+	memcpy( ddata, feat_detection_data(feat), sizeof( struct detection_data ) );
+	new_feat->feature_data = ddata;
+
+	return new_feat;
+}
+static void hist_to_descr( double* hist,struct feature* feat)
+{
+	//方向修正
+
+	//将主方向移至首部
+
+	//设置方向
+
+	//设置描述符
+
+}
+*/
+static void release_pyr( IplImage**** pyr, int octvs, int n )
+{
+	int i, j;
+	for( i = 0; i < octvs; i++ )
+	{
+		for( j = 0; j < n; j++ )
+			cvReleaseImage( &(*pyr)[i][j] );
+		free( (*pyr)[i] );
+	}
+	free( *pyr );
+	*pyr = NULL;
+}
+
+static int feature_cmp( void* feat1, void* feat2, void* param )
+{
+	struct feature* f1 = (struct feature*) feat1;
+	struct feature* f2 = (struct feature*) feat2;
+
+	if( f1->scale < f2->scale )
+		return 1;
+	if( f1->scale > f2->scale )
+		return -1;
+	return 0;
 }

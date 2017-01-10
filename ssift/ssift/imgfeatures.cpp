@@ -33,7 +33,7 @@ Output:			// нч
 Return:			// нч
 Others:			// нч
 *****************************************************************************/
-static void draw_liuli_features(IplImage* img,struct feature* feat,int n)
+void draw_liuli_features(IplImage* img,struct feature* feat,int n)
 {
 	CvScalar color = CV_RGB( 255, 255, 255);
 	int i;
