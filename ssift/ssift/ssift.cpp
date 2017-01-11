@@ -841,7 +841,19 @@ static void adjust_for_img_dbl( CvSeq* features )
 		feat->img_point.y /= 2.0;
     }
 }
-
+/*****************************************************************************
+Function:		// calc_feature_oris
+Description:	// 计算图像特征点的方向和描述符
+Calls:			// cvSeqPopFront、ori_hist、dominant_ori、add_good_ori_features
+Called By:		// _ssift_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @features	特征点序列
+				// @gauss_pyr	高斯差分金字塔
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void calc_feature_oris( CvSeq* features, IplImage*** gauss_pyr )
 {
 	struct feature* feat;
@@ -872,19 +884,18 @@ static void calc_feature_oris( CvSeq* features, IplImage*** gauss_pyr )
 
 
 
-/*
-Computes a gradient orientation histogram at a specified pixel.
-
-@param img image
-@param r pixel row
-@param c pixel col
-@param n number of histogram bins
-@param rad radius of region over which histogram is computed
-@param sigma std for Gaussian weighting of histogram entries
-
-@return Returns an n-element array containing an orientation histogram
-	representing orientations between 0 and 2 PI.
-*/
+/*****************************************************************************
+Function:		// ori_hist
+Description:	// 计算特征点方向直方图
+Calls:			// calc_grad_mag_ori、cvRound
+Called By:		// calc_feature_oris
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @features	特征点序列
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sigma)
 {
 	double* hist;
@@ -894,7 +905,7 @@ static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sig
 	hist = (double*)calloc( n, sizeof( double ) );
 	exp_denom = 2.0 * sigma * sigma;
 	for( i = -rad; i <= rad; i++ )
-		for( j = -rad; j <= rad; j++ )
+		for( j = -( cvRound( sqrt( rad*rad - i*i ) ) ); j <= ( cvRound( sqrt( rad*rad - i*i ) ) ); j++ )
 			if( calc_grad_mag_ori( img, r + i, c + j, &mag, &ori ) )
 			{
 				w = exp( -( i*i + j*j ) / exp_denom );
@@ -908,18 +919,22 @@ static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sig
 
 
 
-/*
-Calculates the gradient magnitude and orientation at a given pixel.
-
-@param img image
-@param r pixel row
-@param c pixel col
-@param mag output as gradient magnitude at pixel (r,c)
-@param ori output as gradient orientation at pixel (r,c)
-
-@return Returns 1 if the specified pixel is a valid one and sets mag and
-	ori accordingly; otherwise returns 0
-*/
+/*****************************************************************************
+Function:		// calc_grad_mag_ori
+Description:	// 计算像素点的模值和方向
+Calls:			// pixval32f、sqrt、atan2
+Called By:		// calc_feature_oris
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @img		特征点序列
+				// @r		特征点行
+				// @c		特征点列
+				// @mag		将计算后的模值存入其中
+				// @ori		将计算后的方向存入其中
+Output:			// 
+Return:			// 计算成功返回 1		其它返回 0
+Others:			// 其它说明
+*****************************************************************************/
 static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* ori )
 {
 	double dx, dy;
@@ -939,12 +954,19 @@ static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* 
 
 
 
-/*
-Gaussian smooths an orientation histogram.
-
-@param hist an orientation histogram
-@param n number of bins
-*/
+/*****************************************************************************
+Function:		// smooth_ori_hist
+Description:	// 高斯平滑方向直方图
+Calls:			// 无
+Called By:		// calc_feature_oris
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @hist	方向直方图 
+				// n		直方图的维数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void smooth_ori_hist( double* hist, int n )
 {
 	double prev, tmp, h0 = hist[0];
@@ -962,14 +984,19 @@ static void smooth_ori_hist( double* hist, int n )
 
 
 
-/*
-Finds the magnitude of the dominant orientation in a histogram
-
-@param hist an orientation histogram
-@param n number of bins
-
-@return Returns the value of the largest bin in hist
-*/
+/*****************************************************************************
+Function:		// dominant_ori
+Description:	// 计算直方图中最大的值 
+Calls:			// 无
+Called By:		// calc_feature_oris
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @hist	直方图 
+				// @n		直方图的维数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static double dominant_ori( double* hist, int n )
 {
 	double omax;
@@ -989,22 +1016,28 @@ static double dominant_ori( double* hist, int n )
 
 
 /*
-Interpolates a histogram peak from left, center, and right values
+	插值	
 */
 #define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
 
 
 
-/*
-Adds features to an array for every orientation in a histogram greater than
-a specified threshold.
-
-@param features new features are added to the end of this array
-@param hist orientation histogram
-@param n number of bins in hist
-@param mag_thr new features are added for entries in hist greater than this
-@param feat new features are clones of this with different orientations
-*/
+/*****************************************************************************
+Function:		// add_good_ori_features
+Description:	// 将好的特征点方向及描述子添加至特征点序列中
+Calls:			// interp_hist_peak、clone_feature、hist_to_descr
+Called By:		// calc_feature_oris
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @features	特征点序列
+				// @hist		直方图
+				// @n			直方图的维数
+				// @mag_thr		模值阈值
+				// @feat		特征点结构
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void add_good_ori_features( CvSeq* features, double* hist, int n,
 								   double mag_thr, struct feature* feat )
 {
@@ -1023,213 +1056,115 @@ static void add_good_ori_features( CvSeq* features, double* hist, int n,
 			bin = ( bin < 0 )? n + bin : ( bin >= n )? bin - n : bin;
 			new_feat = clone_feature( feat );
 			new_feat->orientation = ( ( PI2 * bin ) / n ) - CV_PI;
+
+			hist_to_descr(hist,new_feat);
+
 			cvSeqPush( features, new_feat );
 			free( new_feat );
 		}
 	}
 }
 
-
-
-/*
-Makes a deep copy of a feature
-
-@param feat feature to be cloned
-
-@return Returns a deep copy of feat
-*/
-static struct feature* clone_feature( struct feature* feat )
-{
-	struct feature* new_feat;
-	struct detection_data* ddata;
-
-	new_feat = new_feature();
-	ddata = feat_detection_data( new_feat );
-	memcpy( new_feat, feat, sizeof( struct feature ) );
-	memcpy( ddata, feat_detection_data(feat), sizeof( struct detection_data ) );
-	new_feat->feature_data = ddata;
-
-	return new_feat;
-}
-/*
-static void compute_descriptors( CvSeq* features, IplImage*** gauss_pyr)
-{
-	struct feature* feat;
-	struct detection_data* ddata;
-	double omax;
-    double* hist;
-    int  k = features->total;
-
-  	for(int i = 0; i < k; i++ )
-    {
-		feat = (feature*)malloc( sizeof( struct feature ) );
-    	//从关键点序列中取一个关键点
-      	cvSeqPopFront( features, feat );
-      	ddata = feat_detection_data( feat );
-      	//计算邻域梯度直方图
-      	hist = descr_hist( gauss_pyr[ddata->octv][ddata->intvl], ddata->r,
-			ddata->c, ddata->scl_octv);
-
-		//对梯度直方图进行高斯平滑
-      	for( int j = 0; j < SSIFT_ORI_SMOOTH_PASSES; j++ )
-			smooth_ori_hist( hist, SSIFT_ORI_HIST_BINS );
-		omax = dominant_ori( hist, SSIFT_ORI_HIST_BINS );
-		//添加大于主方向峰值80%的方向，作为关键点的辅方向
-      	add_good_ori_features( features, hist, SSIFT_ORI_HIST_BINS,
-			     omax * SSIFT_ORI_PEAK_RATIO, feat );
-      	//将梯度直方图转换成描述子向量
-      	hist_to_descr( hist,feat );
-      	//释放空间
-      	//release_descr_hist( hist );
-    }
-}
-
-static double* descr_hist( IplImage* img, int r, int c, double scl_octv)
-{
-	double* hist;
-	double mag,ori,w,exp_denom,PI2 = CV_PI *2.0;
-	int radius ,bin;
-    //分配空间
-	hist = (double*)calloc( 12, sizeof( double ) );
-	//统计半径
-	radius = cvRound( SSIFT_ORI_RADIUS * scl_octv );
-
-	exp_denom = 2 * SSIFT_ORI_SIG_FCTR * scl_octv * SSIFT_ORI_SIG_FCTR * scl_octv;
-	//统计范围内
-	for (int i = -radius; i <= radius; i++)
-	{
-		int tmp = cvRound( sqrt( radius * radius - i * i ) );
-		for (int j = -tmp; j <= tmp; j++)
-		{
-			if (calc_grad_mag_ori( img, r + i, c + j, &mag, &ori ) )
-			{
-				w = exp( -( i * i + j * j ) / exp_denom );
-				bin = cvRound( SSIFT_ORI_HIST_BINS * ( ori + CV_PI ) / PI2 );
-				bin = ( bin < SSIFT_ORI_HIST_BINS )? bin : 0;
-				//直方统计
-				hist[bin] += w * mag;
-			}
-		}
-	}
-	return hist;
-}
-
-static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* ori )
-{
-	double dx, dy;
-
-	if( r > 0  &&  r < img->height - 1  &&  c > 0  &&  c < img->width - 1 )
-	{
-		dx = pixval32f( img, r, c+1 ) - pixval32f( img, r, c-1 );
-		dy = pixval32f( img, r-1, c ) - pixval32f( img, r+1, c );
-		*mag = sqrt( dx*dx + dy*dy );
-		*ori = atan2( dy, dx );
-		return 1;
-	}
-
-	else
-		return 0;
-}
-
-static void smooth_ori_hist( double* hist, int n )
-{
-	double prev, tmp, h0 = hist[0];
-	int i;
-
-	prev = hist[n-1];
-	for( i = 0; i < n; i++ )
-	{
-		tmp = hist[i];
-		hist[i] = 0.25 * prev + 0.5 * hist[i] + 
-			0.25 * ( ( i+1 == n )? h0 : hist[i+1] );
-		prev = tmp;
-	}
-}
-
-static double dominant_ori( double* hist, int n )
-{
-	double omax;
-	int maxbin;
-	double cp[12] = { 0 };
-	omax = hist[0];
-	maxbin = 0;
-	for( int i = 1; i < n; i++ )
-		if( hist[i] > omax )
-		{
-			omax = hist[i];
-			maxbin = i;
-		}
-	//将最大值前的数据暂存至cp中
-	for (int j = 0; j < maxbin; j++)
-	{
-		cp[j] = hist[j];
-	}
-	for (int k = 0; k < n; k++)
-	{
-		if ( k < maxbin && k < n)
-		{
-			hist[k] = hist[k+maxbin];
-		}
-		else
-		{
-			hist[k] = cp[k-maxbin];
-		}
-	}
-	return hist[0];
-}
-
-#define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
-
-
-static void add_good_ori_features( CvSeq* features, double* hist, int n,
-								   double mag_thr, struct feature* feat )
-{
-	struct feature* new_feat;
-	double bin, PI2 = CV_PI * 2.0;
-	int l, r, i;
-
-	for( i = 0; i < n; i++ )
-	{
-		l = ( i == 0 )? n - 1 : i-1;
-		r = ( i + 1 ) % n;
-
-		if( hist[i] > hist[l]  &&  hist[i] > hist[r]  &&  hist[i] >= mag_thr )
-		{
-			bin = i + interp_hist_peak( hist[l], hist[i], hist[r] );
-			bin = ( bin < 0 )? n + bin : ( bin >= n )? bin - n : bin;
-			new_feat = clone_feature( feat );
-			new_feat->orientation = ( ( PI2 * bin ) / n ) - CV_PI;
-			cvSeqPush( features, new_feat );
-			free( new_feat );
-		}
-	}
-}
-
-static struct feature* clone_feature( struct feature* feat )
-{
-	struct feature* new_feat;
-	struct detection_data* ddata;
-
-	new_feat = new_feature();
-	ddata = feat_detection_data( new_feat );
-	memcpy( new_feat, feat, sizeof( struct feature ) );
-	memcpy( ddata, feat_detection_data(feat), sizeof( struct detection_data ) );
-	new_feat->feature_data = ddata;
-
-	return new_feat;
-}
+/*****************************************************************************
+Function:		// hist_to_descr
+Description:	// 将直方图作为向量存入特征点结构体中
+Calls:			// normalize_descr
+Called By:		// add_good_ori_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @hist	直方图 
+				// @feat	特征点结构体
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void hist_to_descr( double* hist,struct feature* feat)
 {
-	//方向修正
-
-	//将主方向移至首部
-
-	//设置方向
-
-	//设置描述符
-
+	int int_val;
+	for (int i = 0; i < SSIFT_ORI_HIST_BINS; i++)
+	{
+		feat->descr[i] = hist[i];
+	}
+	feat->dimension = SSIFT_ORI_HIST_BINS;
+	normalize_descr( feat );
+	for( int i = 0; i < SSIFT_ORI_HIST_BINS; i++ )
+		if( feat->descr[i] > SSIFT_DESCR_MAG_THR )
+			feat->descr[i] = SSIFT_DESCR_MAG_THR;
+	normalize_descr( feat );
+	for( int i = 0; i < SSIFT_ORI_HIST_BINS; i++ )
+	{
+		int_val = SSIFT_INT_DESCR_FCTR * feat->descr[i];
+		feat->descr[i] = MIN( 255, int_val );
+	}
 }
-*/
+/*****************************************************************************
+Function:		// normalize_descr、
+Description:	// 归一化
+Calls:			// 无
+Called By:		// hist_to_descr
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @feat	特征点结构体
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
+static void normalize_descr( struct feature* feat )
+{
+	double cur, len_inv, len_sq = 0.0;
+	int i, d = feat->dimension;
+
+	for( i = 0; i < d; i++ )
+	{
+		cur = feat->descr[i];
+		len_sq += cur*cur;
+	}
+	len_inv = 1.0 / sqrt( len_sq );
+	for( i = 0; i < d; i++ )
+		feat->descr[i] *= len_inv;
+}
+
+
+/*****************************************************************************
+Function:		// clone_feature
+Description:	// 复制一个特征点
+Calls:			// 无
+Called By:		// add_good_ori_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @feat	特征点结构体
+Output:			// 
+Return:			// 复制后的特征点指针
+Others:			// 其它说明
+*****************************************************************************/
+static struct feature* clone_feature( struct feature* feat )
+{
+	struct feature* new_feat;
+	struct detection_data* ddata;
+
+	new_feat = new_feature();
+	ddata = feat_detection_data( new_feat );
+	memcpy( new_feat, feat, sizeof( struct feature ) );
+	memcpy( ddata, feat_detection_data(feat), sizeof( struct detection_data ) );
+	new_feat->feature_data = ddata;
+
+	return new_feat;
+}
+
+/*****************************************************************************
+Function:		// release_pyr
+Description:	// 释放金字塔空间
+Calls:			// cvReleaseImage
+Called By:		// _ssift_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @pyr		需要释放的金字塔指针 
+				// @octvs	金字塔分为多少组
+				// @n		每组的图像数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void release_pyr( IplImage**** pyr, int octvs, int n )
 {
 	int i, j;
@@ -1242,7 +1177,20 @@ static void release_pyr( IplImage**** pyr, int octvs, int n )
 	free( *pyr );
 	*pyr = NULL;
 }
-
+/*****************************************************************************
+Function:		// feature_cmp
+Description:	// 比较特征点的尺度排序用
+Calls:			// 无
+Called By:		// _ssift_features
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @feat1		特征点1
+				// @feat2		特征点2
+				// @param		比较时回调函数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static int feature_cmp( void* feat1, void* feat2, void* param )
 {
 	struct feature* f1 = (struct feature*) feat1;
