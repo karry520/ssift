@@ -90,3 +90,23 @@ static void draw_liuli_feature(IplImage* img,struct  feature* feat,CvScalar colo
 	cvLine( img, end, h1, color, 1, 8, 0 );
 	cvLine( img, end, h2, color, 1, 8, 0 );
 }
+
+double descr_dist_sq( struct feature* f1, struct feature* f2 )
+{
+	double diff, dsq = 0;
+	double* descr1, * descr2;
+	int i, d;
+
+	d = f1->dimension;
+	if( f2->dimension != d )
+		return DBL_MAX;
+	descr1 = f1->descr;
+	descr2 = f2->descr;
+
+	for( i = 0; i < d; i++ )
+	{
+		diff = descr1[i] - descr2[i];
+		dsq += diff*diff;
+	}
+	return dsq;
+}

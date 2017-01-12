@@ -30,6 +30,9 @@
     <ClInclude Include="xform.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="minpq.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgfeatures.cpp">
@@ -51,6 +54,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="match.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="minpq.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

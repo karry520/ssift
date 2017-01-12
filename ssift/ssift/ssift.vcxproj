@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClInclude Include="imgfeatures.h" />
     <ClInclude Include="kdtree.h" />
+    <ClInclude Include="minpq.h" />
     <ClInclude Include="ssift.h" />
     <ClInclude Include="utils.h" />
     <ClInclude Include="xform.h" />
@@ -92,6 +93,7 @@
     <ClCompile Include="imgfeatures.cpp" />
     <ClCompile Include="kdtree.cpp" />
     <ClCompile Include="match.cpp" />
+    <ClCompile Include="minpq.cpp" />
     <ClCompile Include="ssift.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="xform.cpp" />
