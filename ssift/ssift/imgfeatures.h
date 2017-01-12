@@ -7,6 +7,8 @@ Version: 0.1
 Date: 完成日期
 History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
+#ifndef IMGFEATURES_H
+#define IMGFEATURES_H
 
 #include "cxcore.h"
 
@@ -48,3 +50,5 @@ Return:			// 无
 Others:			// 无
 *****************************************************************************/
 extern void draw_liuli_features(IplImage* img,struct feature* feat,int n);
+
+#endif

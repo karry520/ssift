@@ -7,6 +7,9 @@ Version: 0.1
 Date: 完成日期
 History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
+#ifndef SSIFT_H
+#define SSIFT_H
+
 #include "cxcore.h"
 
 //探测特征点时所用到的结构体
@@ -115,3 +118,5 @@ Others:			// 无
 extern int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 						   double sigma, double contr_thr, int curv_thr,
 						   int img_dbl );
+
+#endif 
