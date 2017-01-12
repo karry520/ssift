@@ -82,14 +82,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="imgfeatures.h" />
+    <ClInclude Include="kdtree.h" />
     <ClInclude Include="ssift.h" />
     <ClInclude Include="utils.h" />
+    <ClInclude Include="xform.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="imgFeat.cpp" />
     <ClCompile Include="imgfeatures.cpp" />
+    <ClCompile Include="kdtree.cpp" />
+    <ClCompile Include="match.cpp" />
     <ClCompile Include="ssift.cpp" />
     <ClCompile Include="utils.cpp" />
+    <ClCompile Include="xform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\..\..\..\..\Desktop\资料文档\sift学习资料汇总\sift\sift-latest_win\sift-1.1.2_20101207_win\beaver.png" />
