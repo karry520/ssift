@@ -1,11 +1,11 @@
 /*****************************************************************************
-Copyright: 2016-2017, Likaiyun
-File name: imgfeatures.cpp
-Description: 特征点重要结构
-Author: 李开运
-Version: 0.1
-Date: 完成日期
-History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
+Copyright:		2016-2017, Likaiyun
+File name:		imgfeatures.cpp
+Description:	特征点重要结构
+Author:			李开运
+Version:		0.1
+Date:			完成日期
+History:修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
 
 #include "utils.h"
@@ -16,9 +16,11 @@ History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 #include <math.h>
 
 /*********************************本地函数申明*******************************/
+
 static void draw_liuli_feature(IplImage* ,struct  feature* ,CvScalar );
 
 /****************************函数定义imgfeatures.h***************************/
+
 /*****************************************************************************
 Function:		// draw_liuli_features
 Description:	// 在图像中画出特征点
@@ -67,7 +69,6 @@ static void draw_liuli_feature(IplImage* img,struct  feature* feat,CvScalar colo
 	double hscale = 0.75;
 	CvPoint start, end, h1, h2;
 
-	/* compute points for an arrow scaled and rotated by feat's scl and ori */
 	start_x = cvRound( feat->x );
 	start_y = cvRound( feat->y );
 	scl = feat->scale;
@@ -90,6 +91,21 @@ static void draw_liuli_feature(IplImage* img,struct  feature* feat,CvScalar colo
 	cvLine( img, end, h1, color, 1, 8, 0 );
 	cvLine( img, end, h2, color, 1, 8, 0 );
 }
+
+/*****************************************************************************
+Function:		// descr_dist_sq
+Description:	// 计算两特征点之间的距离
+Calls:			// 
+Called By:		// kdtree_bbf_knn、
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @f1	特征点1
+				// @f2	特征点2
+				// @n	两点之间的距离
+Output:			// 无
+Return:			// 无
+Others:			// 无
+*****************************************************************************/
 
 double descr_dist_sq( struct feature* f1, struct feature* f2 )
 {

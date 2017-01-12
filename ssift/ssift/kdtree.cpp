@@ -1,28 +1,12 @@
 /*****************************************************************************
-Copyright: 2016-2017, Likaiyun
-File name: kdtree.cpp
-Description: 提取图片中的特征点
-Author: 李开运
-Version: 0.1
-Date: 完成日期
-History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
+Copyright:		2016-2017, Likaiyun
+File name:		kdtree.cpp
+Description:	kd-tree-bbf算法
+Author:			李开运
+Version:		0.1
+Date:			完成日期
+History:修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
-
-/*
-Functions and structures for maintaining a k-d tree database of image
-features.
-
-For more information, refer to:
-
-Beis, J. S. and Lowe, D. G.  Shape indexing using approximate
-nearest-neighbor search in high-dimensional spaces.  In <EM>Conference
-on Computer Vision and Pattern Recognition (CVPR)</EM> (2003),
-pp. 1000--1006.
-
-Copyright (C) 2006-2010  Rob Hess <hess@eecs.oregonstate.edu>
-
-@version 1.1.2-20100521
-*/
 
 #include "kdtree.h"
 #include "minpq.h"
@@ -33,13 +17,14 @@ Copyright (C) 2006-2010  Rob Hess <hess@eecs.oregonstate.edu>
 
 #include <stdio.h>
 
+/************************************结构体**********************************/
 struct bbf_data
 {
 	double d;
 	void* old_data;
 };
 
-/************************* Local Function Prototypes *************************/
+/****************************** 本地函数申明 ********************************/
 
 static struct kd_node* kd_node_init( struct feature*, int );
 static void expand_kd_node_subtree( struct kd_node* );
@@ -49,23 +34,25 @@ static double rank_select( double*, int, int );
 static void insertion_sort( double*, int );
 static int partition_array( double*, int, double );
 static void partition_features( struct kd_node* );
-static struct kd_node* explore_to_leaf( struct kd_node*, struct feature*,
-										struct min_pq* );
+static struct kd_node* explore_to_leaf( struct kd_node*, struct feature*, struct min_pq* );
 static int insert_into_nbr_array( struct feature*, struct feature**, int, int );
 static int within_rect( CvPoint2D64f, CvRect );
 
+/******************************** 函数定义 **********************************/
 
-/******************** Functions prototyped in keyptdb.h **********************/
-
-
-/*
-A function to build a k-d tree database from keypoints in an array.
-
-@param features an array of features
-@param n the number of features in features
-
-@return Returns the root of a kd tree built from features or NULL on error.
-*/
+/*****************************************************************************
+Function:		// kdtree_build
+Description:	// 根据特征点集合建立k-d树
+Calls:			// 无
+Called By:		// matchs.main
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @featrues	特征点集
+				// @n			特征点个数
+Output:			// 
+Return:			// 返回初始化后kd_tree树根节点（kd_node）
+Others:			// 其它说明
+*****************************************************************************/
 struct kd_node* kdtree_build( struct feature* features, int n )
 {
 	struct kd_node* kd_root;
@@ -83,22 +70,22 @@ struct kd_node* kdtree_build( struct feature* features, int n )
 	return kd_root;
 }
 
-
-
-/*
-Finds an image feature's approximate k nearest neighbors in a kd tree using
-Best Bin First search.
-
-@param kd_root root of an image feature kd tree
-@param feat image feature for whose neighbors to search
-@param k number of neighbors to find
-@param nbrs pointer to an array in which to store pointers to neighbors
-	in order of increasing descriptor distance
-@param max_nn_chks search is cut off after examining this many tree entries
-
-@return Returns the number of neighbors found and stored in nbrs, or
-	-1 on error.
-*/
+/*****************************************************************************
+Function:		// kdtree_bbf_knn
+Description:	// BBF算法寻找k近邻特征点
+Calls:			// 无
+Called By:		// matchs.main
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_root		k-d树根结点
+				// @feat		目标特征点描述子向量
+				// @k			近邻数量
+				// @nbrs		k个近邻特征点
+				// @max_nn_chks	最大搜索次数
+Output:			// 
+Return:			// 存储在nbrs中的近邻个数，-1表示失败
+Others:			// 其它说明
+*****************************************************************************/
 int kdtree_bbf_knn( struct kd_node* kd_root, struct feature* feat, int k,
 					struct feature*** nbrs, int max_nn_chks )
 {
@@ -177,26 +164,22 @@ fail:
 	return -1;
 }
 
-
-
-/*
-Finds an image feature's approximate k nearest neighbors within a specified
-spatial region in a kd tree using Best Bin First search.
-
-@param kd_root root of an image feature kd tree
-@param feat image feature for whose neighbors to search
-@param k number of neighbors to find
-@param nbrs pointer to an array in which to store pointers to neighbors
-	in order of increasing descriptor distance
-@param max_nn_chks search is cut off after examining this many tree entries
-@param rect rectangular region in which to search for neighbors
-@param model if true, spatial search is based on kdtree features' model
-	locations; otherwise it is based on their image locations
-
-@return Returns the number of neighbors found and stored in \a nbrs
-	(in case \a k neighbors could not be found before examining
-	\a max_nn_checks keypoint entries).
-*/
+/*****************************************************************************
+Function:		// kdtree_bbf_knn
+Description:	// BBF算法寻找k近邻特征点
+Calls:			// 无
+Called By:		// matchs.main
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_root		k-d树根结点
+				// @feat		目标特征点描述子向量
+				// @k			近邻数量
+				// @nbrs		k个近邻特征点
+				// @max_nn_chks	最大搜索次数
+Output:			// 
+Return:			// 存储在nbrs中的近邻个数，-1表示失败
+Others:			// 其它说明
+*****************************************************************************/
 int kdtree_bbf_spatial_knn( struct kd_node* kd_root, struct feature* feat,
 						   int k, struct feature*** nbrs, int max_nn_chks,
 						   CvRect rect, int model )
@@ -227,13 +210,18 @@ end:
 	return t;
 }
 
-
-
-/*
-De-allocates memory held by a kd tree
-
-@param kd_root pointer to the root of a kd tree
-*/
+/*****************************************************************************
+Function:		// kdtree_release
+Description:	// 释放空间
+Calls:			// 无
+Called By:		// matchs.main 
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_root		k-d树根结点
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 void kdtree_release( struct kd_node* kd_root )
 {
 	if( ! kd_root )
@@ -243,19 +231,21 @@ void kdtree_release( struct kd_node* kd_root )
 	free( kd_root );
 }
 
+/****************************** 本地函数定义 ********************************/
 
-/************************ Functions prototyped here **************************/
-
-
-/*
-Initializes a kd tree node with a set of features.  The node is not
-expanded, and no ordering is imposed on the features.
-
-@param features an array of image features
-@param n number of features
-
-@return Returns an unexpanded kd-tree node.
-*/
+/*****************************************************************************
+Function:		// kd_node_init
+Description:	// 用给定的特征点初始化k-d树节点
+Calls:			// 无
+Called By:		// kdtree_build 
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @feat	特征点描述子向量集
+				// @n		特征点的个数 
+Output:			// 
+Return:			// 返回kd_root k-d树根结点
+Others:			// 其它说明
+*****************************************************************************/
 static struct kd_node* kd_node_init( struct feature* features, int n )
 {
 	struct kd_node* kd_node;
@@ -269,14 +259,18 @@ static struct kd_node* kd_node_init( struct feature* features, int n )
 	return kd_node;
 }
 
-
-
-/*
-Recursively expands a specified kd tree node into a tree whose leaves
-contain one entry each.
-
-@param kd_node an unexpanded node in a kd tree
-*/
+/*****************************************************************************
+Function:		// expand_kd_node_subtree
+Description:	// k-d树扩建子树
+Calls:			// 无
+Called By:		// kdtree_build
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_root		k-d树根结点
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void expand_kd_node_subtree( struct kd_node* kd_node )
 {
 	/* base case: leaf node */
@@ -295,14 +289,18 @@ static void expand_kd_node_subtree( struct kd_node* kd_node )
 		expand_kd_node_subtree( kd_node->kd_right );
 }
 
-
-
-/*
-Determines the descriptor index at which and the value with which to
-partition a kd tree node's features.
-
-@param kd_node a kd tree node
-*/
+/*****************************************************************************
+Function:		// assign_part_key
+Description:	// 确定输入节点的枢轴索引和枢轴值
+Calls:			// 无
+Called By:		// expand_kd_node_subtree 
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_root		k-d树根结点
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void assign_part_key( struct kd_node* kd_node )
 {
 	struct feature* features;
@@ -314,7 +312,6 @@ static void assign_part_key( struct kd_node* kd_node )
 	n = kd_node->n;
 	d = features[0].dimension;
 
-	/* partition key index is that along which descriptors have most variance */
 	for( j = 0; j < d; j++ )
 	{
 		mean = var = 0;
@@ -346,35 +343,38 @@ static void assign_part_key( struct kd_node* kd_node )
 	kd_node->kv = kv;
 }
 
-
-
-/*
-Finds the median value of an array.  The array's elements are re-ordered
-by this function.
-
-@param array an array; the order of its elelemts is reordered
-@param n number of elements in array
-
-@return Returns the median value of array.
-*/
+/*****************************************************************************
+Function:		// median_select
+Description:	// 找到输入数组的中值
+Calls:			// 无
+Called By:		// assign_part_key
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @array	输入数组
+				// @n		元素个数
+Output:			// 
+Return:			// 中值
+Others:			// 其它说明
+*****************************************************************************/
 static double median_select( double* array, int n )
 {
 	return rank_select( array, n, (n - 1) / 2 );
 }
 
-
-
-/*
-Finds the element of a specified rank in an array using the linear time
-median-of-medians algorithm by Blum, Floyd, Pratt, Rivest, and Tarjan.
-The elements of the array are re-ordered by this function.
-
-@param array an array; the order of its elelemts is reordered
-@param n number of elements in array
-@param r the zero-based rank of the element to be selected
-
-@return Returns the element from array with zero-based rank r.
-*/
+/*****************************************************************************
+Function:		// rank_select
+Description:	// 找到输入数组中第r小的数
+Calls:			// 无
+Called By:		// median_select 
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @array	输入数组
+				// @n		元素个数
+				// @r		第r小的数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static double rank_select( double* array, int n, int r )
 {
 	double* tmp, med;
@@ -418,14 +418,19 @@ static double rank_select( double* array, int n, int r )
 	}
 }
 
-
-
-/*
-Sorts an array in place into increasing order using insertion sort.
-
-@param array an array
-@param n number of elements
-*/
+/*****************************************************************************
+Function:		// insertion_sort
+Description:	// 用插入法对输入数组进行升序排序
+Calls:			// 无
+Called By:		// rank_select 
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @array	输入数组
+				// @n		元素个数
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void insertion_sort( double* array, int n )
 {
 	double k;
@@ -444,17 +449,20 @@ static void insertion_sort( double* array, int n )
 	}
 }
 
-
-
-/*
-Partitions an array around a specified value.
-
-@param array an array
-@param n number of elements
-@param pivot value around which to partition
-
-@return Returns index of the pivot after partitioning
-*/
+/*****************************************************************************
+Function:		// partition_array
+Description:	// 根据给定的枢轴值分割数组，使数组前部分小于pivot，后部分大于pivot
+Calls:			// 无
+Called By:		// rank_select
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @array	输入数组
+				// @n		元素个数
+				// @pivot	枢轴值
+Output:			// 
+Return:			// 分割后枢轴的下标
+Others:			// 其它说明
+*****************************************************************************/
 static int partition_array( double* array, int n, double pivot )
 {
 	double tmp;
@@ -476,14 +484,18 @@ static int partition_array( double* array, int n, double pivot )
 	return i;
 }
 
-
-
-/*
-Partitions the features at a specified kd tree node to create its two
-children.
-
-@param kd_node a kd tree node whose partition key is set
-*/
+/*****************************************************************************
+Function:		// partition_features
+Description:	// 释放空间
+Calls:			// 无
+Called By:		// expand_kd_node_subtree
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_node		k-d结点
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static void partition_features( struct kd_node* kd_node )
 {
 	struct feature* features, tmp;
@@ -518,23 +530,20 @@ static void partition_features( struct kd_node* kd_node )
 	kd_node->kd_right = kd_node_init( features + ( j + 1 ), ( n - j - 1 ) );
 }
 
-
-
-/*
-Explores a kd tree from a given node to a leaf.  Branching decisions are
-made at each node based on the descriptor of a given feature.  Each node
-examined but not explored is put into a priority queue to be explored
-later, keyed based on the distance from its partition key value to the
-given feature's desctiptor.
-
-@param kd_node root of the subtree to be explored
-@param feat feature upon which branching decisions are based
-@param min_pq a minimizing priority queue into which tree nodes are placed
-	as described above
-
-@return Returns a pointer to the leaf node at which exploration ends or
-	NULL on error.
-*/
+/*****************************************************************************
+Function:		// explore_to_leaf
+Description:	// 从给定结点搜索k-d树直到叶节点,搜索过程中将未搜索的节点根据优先级放入队列
+Calls:			// 无
+Called By:		// kdtree_bbf_knn
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @kd_node		k-d树结点
+				// @feat		特征向量
+				// @min_pq		优先级队列
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static struct kd_node* explore_to_leaf( struct kd_node* kd_node, struct feature* feat,
 										struct min_pq* min_pq )
 {
@@ -575,22 +584,21 @@ static struct kd_node* explore_to_leaf( struct kd_node* kd_node, struct feature*
 	return expl;
 }
 
-
-
-/*
-Inserts a feature into the nearest-neighbor array so that the array remains
-in order of increasing descriptor distance from the search feature.
-
-@param feat feature to be inderted into the array; it's feature_data field
-	should be a pointer to a bbf_data with d equal to the squared descriptor
-	distance between feat and the search feature
-@param nbrs array of nearest neighbors neighbors
-@param n number of elements already in nbrs and
-@param k maximum number of elements in nbrs
-
-@return If feat was successfully inserted into nbrs, returns 1; otherwise
-	returns 0.
-*/
+/*****************************************************************************
+Function:		// insert_into_nbr_array
+Description:	// 插入一个特征点到最近邻数组，使数组中的点按到目标点的距离升序排列
+Calls:			// 无
+Called By:		// kdtree_bbf_knn
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @feat		目标特征点描述子向量
+				// @k			近邻数量
+				// @nbrs		k个近邻特征点
+				// @n			最近邻数组中的元素个数 
+Output:			// 
+Return:			// 1：插入成功。否则返回0
+Others:			// 其它说明
+*****************************************************************************/
 static int insert_into_nbr_array( struct feature* feat, struct feature** nbrs,
 								  int n, int k )
 {
@@ -648,16 +656,19 @@ static int insert_into_nbr_array( struct feature* feat, struct feature** nbrs,
 	return ret;
 }
 
-
-
-/*
-Determines whether a given point lies within a specified rectangular region
-
-@param pt point
-@param rect rectangular region
-
-@return Returns 1 if pt is inside rect or 0 otherwise
-*/
+/*****************************************************************************
+Function:		// within_rect
+Description:	// 判断给定点是否在某矩形中
+Calls:			// 无
+Called By:		// kdtree_bbf_spatial_knn
+Table Accessed: // 无
+Table Updated:	// 无
+Input:			// @pt		特征点
+				// @rect	矩形
+Output:			// 
+Return:			// 无
+Others:			// 其它说明
+*****************************************************************************/
 static int within_rect( CvPoint2D64f pt, CvRect rect )
 {
 	if( pt.x < rect.x  ||  pt.y < rect.y )

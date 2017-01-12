@@ -1,20 +1,19 @@
-﻿生成启动时间为 2017/1/12 10:59:22。
+﻿生成启动时间为 2017/1/12 15:57:10。
      1>项目“C:\Users\karry\Documents\GitHub\ssift\ssift\ssift\ssift.vcxproj”在节点 2 上(Build 个目标)。
      1>ClCompile:
-         D:\Program Files\vs2012\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt imgFeat.cpp imgfeatures.cpp kdtree.cpp match.cpp minpq.cpp ssift.cpp utils.cpp xform.cpp
+         D:\Program Files\vs2012\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt imgFeat.cpp imgfeatures.cpp kdtree.cpp match.cpp minpq.cpp ssift.cpp xform.cpp
          xform.cpp
      1>c:\users\karry\documents\github\ssift\ssift\ssift\xform.cpp(31): warning C4042: “unnamed-parameter”: 有坏的存储类
      1>c:\users\karry\documents\github\ssift\ssift\ssift\xform.cpp(95): warning C4244: “参数”: 从“time_t”转换到“unsigned int”，可能丢失数据
-         utils.cpp
          ssift.cpp
-     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(148): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
-     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(209): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(219): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
-     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(1096): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(147): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
+     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(208): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(218): warning C4244: “=”: 从“double”转换到“float”，可能丢失数据
+     1>c:\users\karry\documents\github\ssift\ssift\ssift\ssift.cpp(1076): warning C4244: “=”: 从“double”转换到“int”，可能丢失数据
          minpq.cpp
          match.cpp
          kdtree.cpp
-     1>c:\users\karry\documents\github\ssift\ssift\ssift\kdtree.cpp(567): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
+     1>c:\users\karry\documents\github\ssift\ssift\ssift\kdtree.cpp(576): warning C4244: “参数”: 从“double”转换到“int”，可能丢失数据
          imgfeatures.cpp
          imgFeat.cpp
          正在生成代码...
@@ -27,9 +26,10 @@
          Debug\ssift.obj
          Debug\utils.obj
          Debug\xform.obj
+         LINK : 没有找到 C:\Users\karry\Documents\GitHub\ssift\ssift\Debug\ssift.exe 或上一个增量链接没有生成它；正在执行完全链接
          ssift.vcxproj -> C:\Users\karry\Documents\GitHub\ssift\ssift\Debug\ssift.exe
      1>已完成生成项目“C:\Users\karry\Documents\GitHub\ssift\ssift\ssift\ssift.vcxproj”(Build 个目标)的操作。
 
 生成成功。
 
-已用时间 00:00:07.16
+已用时间 00:00:11.18

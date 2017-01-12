@@ -1,11 +1,11 @@
 /*****************************************************************************
 Copyright:		2016-2017, Likaiyun
-File name:		ssift
-Description:	提取图片中的特征点
+File name:		ssift.cpp
+Description:	特征点提取、存储
 Author:			李开运
 Version:		0.1
 Date:			完成日期
-History:		修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
+History:修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
 
 #include "ssift.h"
@@ -78,7 +78,6 @@ static int feature_cmp( void*, void*, void* );
 static void release_descr_hist( double* );
 //释放图像金字塔存储空间
 static void release_pyr( IplImage****, int, int );
-
 
 /*****************************函数声明 ssift.h*******************************/ 
 
@@ -583,8 +582,6 @@ static void interp_step( IplImage*** dog_pyr, int octv, int intvl, int r, int c,
 	*xc = x[0];
 }
 
-
-
 /*****************************************************************************
 Function:		// deriv_3D
 Description:	// 每一步拟合的操作计算高斯差像素点在行、列、层三个方向上的偏导
@@ -620,7 +617,6 @@ static CvMat* deriv_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 
 	return dI;
 }
-
 
 /*****************************************************************************
 Function:		// hessian_3D
@@ -677,8 +673,6 @@ static CvMat* hessian_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c
 	return H;
 }
 
-
-
 /*****************************************************************************
 Function:		// interp_contr
 Description:	// 计算被插值后像素点的对比度
@@ -713,8 +707,6 @@ static double interp_contr( IplImage*** dog_pyr, int octv, int intvl, int r,
 	return pixval32f( dog_pyr[octv][intvl], r, c ) + t[0] * 0.5;
 }
 
-
-
 /*****************************************************************************
 Function:		// new_feature
 Description:	// 创建一个新的特征点(feature)结构体
@@ -740,8 +732,6 @@ static struct feature* new_feature( void )
 
 	return feat;
 }
-
-
 
 /*****************************************************************************
 Function:		// is_too_edge_like
@@ -917,8 +907,6 @@ static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sig
 	return hist;
 }
 
-
-
 /*****************************************************************************
 Function:		// calc_grad_mag_ori
 Description:	// 计算像素点的模值和方向
@@ -952,8 +940,6 @@ static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* 
 		return 0;
 }
 
-
-
 /*****************************************************************************
 Function:		// smooth_ori_hist
 Description:	// 高斯平滑方向直方图
@@ -981,8 +967,6 @@ static void smooth_ori_hist( double* hist, int n )
 		prev = tmp;
 	}
 }
-
-
 
 /*****************************************************************************
 Function:		// dominant_ori
@@ -1013,14 +997,10 @@ static double dominant_ori( double* hist, int n )
 	return omax;
 }
 
-
-
 /*
 	插值	
 */
 #define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
-
-
 
 /*****************************************************************************
 Function:		// add_good_ori_features
@@ -1124,7 +1104,6 @@ static void normalize_descr( struct feature* feat )
 		feat->descr[i] *= len_inv;
 }
 
-
 /*****************************************************************************
 Function:		// clone_feature
 Description:	// 复制一个特征点
@@ -1177,6 +1156,7 @@ static void release_pyr( IplImage**** pyr, int octvs, int n )
 	free( *pyr );
 	*pyr = NULL;
 }
+
 /*****************************************************************************
 Function:		// feature_cmp
 Description:	// 比较特征点的尺度排序用

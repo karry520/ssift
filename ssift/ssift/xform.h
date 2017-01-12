@@ -7,18 +7,11 @@ Version: 0.1
 Date: 完成日期
 History: 修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 *****************************************************************************/
-/**@file
-Functions for computing transforms from image feature correspondences
-
-Copyright (C) 2006-2010  Rob Hess <hess@eecs.oregonstate.edu>
-@version 1.1.2-20100521
-*/
 
 #ifndef XFORM_H
 #define XFORM_H
 
 #include <cxcore.h>
-
 
 /********************************** Structures *******************************/
 
