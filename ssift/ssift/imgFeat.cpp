@@ -38,22 +38,22 @@ int img_dbl = SSIFT_IMG_DBL;
 
 /********************************** Main *************************************/
 
-int main( void )
-{
-	IplImage* img;
-	struct feature* features;
-	int n = 0;
-
-	img = cvLoadImage( img_file_name, 1 );
-
-	n = _ssift_features( img, &features, intvls, sigma, contr_thr, curv_thr,
-		img_dbl );
-
-	draw_liuli_features( img, features, n );
-	cvNamedWindow( img_file_name, 1 );
-	cvShowImage( img_file_name, img );
-	cvWaitKey( 0 );
-
-
-	return 0;
-}
+//int main( void )
+//{
+//	IplImage* img;
+//	struct feature* features;
+//	int n = 0;
+//
+//	img = cvLoadImage( img_file_name, 1 );
+//
+//	n = _ssift_features( img, &features, intvls, sigma, contr_thr, curv_thr,
+//		img_dbl );
+//
+//	draw_liuli_features( img, features, n );
+//	cvNamedWindow( img_file_name, 1 );
+//	cvShowImage( img_file_name, img );
+//	cvWaitKey( 0 );
+//
+//
+//	return 0;
+//}
