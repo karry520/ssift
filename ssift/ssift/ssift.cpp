@@ -15,6 +15,8 @@ History:修改历史记录列表， 每条修改记录应包括修改日期、修改者及修改内容简述。
 #include <cxcore.h>
 #include <cv.h>
 
+#include <stdio.h>
+double t1 = 0,t2 = 0,t3 = 0;
 /*****************************本地函数原型**********************************/ 
 
 //初始化输入图像
@@ -142,12 +144,16 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	if( ! feat )
 		fatal_error( "NULL pointer error, %s, line %d",  __FILE__, __LINE__ );
 
+	t1 = (double)cvGetTickCount();
 	//第零步：处理图片、构建尺度空间
 	init_img = create_init_img( img, img_dbl, sigma );
 	octvs = log( MIN( init_img->width, init_img->height ) ) / log(2) - 2;
 	gauss_pyr = build_gauss_pyr( init_img, octvs, intvls, sigma );
 	dog_pyr = build_dog_pyr( gauss_pyr, octvs, intvls );
+	t1 = ((double)cvGetTickCount()) - t1;
+	printf( "step 1 = %gus\n", t1/(cvGetTickFrequency()) );	
 
+	t2 = (double)cvGetTickCount();
 	//第一步：极值检测 
 	storage = cvCreateMemStorage( 0 );
 	features = scale_space_extrema( dog_pyr, octvs, intvls, contr_thr,
@@ -156,9 +162,11 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	calc_feature_scales( features, sigma, intvls );
 	if( img_dbl )
 		adjust_for_img_dbl( features );
+	t2 = ((double)cvGetTickCount()) - t2;
+	printf( "step 2 = %gus\n", t2/(cvGetTickFrequency()) );	
 
 	//第二步：特征向量
-	//compute_descriptors( features, gauss_pyr );
+	t3 = (double)cvGetTickCount();
 	calc_feature_oris( features, gauss_pyr );
 
 	cvSeqSort( features, (CvCmpFunc)feature_cmp, NULL );
@@ -170,6 +178,8 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 		free( (*feat)[i].feature_data );
 		(*feat)[i].feature_data = NULL;
 	}
+	t3 = ((double)cvGetTickCount()) - t3;
+	printf( "step 3 = %gus\n", t3/(cvGetTickFrequency()) );	
 	//释放内存空间
 	cvReleaseMemStorage( &storage );
 	cvReleaseImage( &init_img );

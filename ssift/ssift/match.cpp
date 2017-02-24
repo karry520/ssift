@@ -33,6 +33,8 @@ char img2_file[] = "beaver_xform.png";
 
 /********************************** Main *************************************/
 
+double time0 = 0,time1 = 0,time2 = 0;
+
 
 int main( int argc, char** argv )
 {
@@ -44,6 +46,9 @@ int main( int argc, char** argv )
 	double d0, d1;
 	int n1, n2, k, i, m = 0;
 
+    struct feature **inliers;
+    int n_inliers;
+
 	img1 = cvLoadImage( img1_file, 1 );
 	if( ! img1 )
 		fatal_error( "unable to load image from %s", img1_file );
@@ -53,9 +58,17 @@ int main( int argc, char** argv )
 	stacked = stack_imgs( img1, img2 );
 
 	fprintf( stderr, "Finding features in %s...\n", img1_file );
+	time0 = (double)cvGetTickCount();
 	n1 = ssift_features( img1, &feat1 );
+	time0 = ((double)cvGetTickCount()) - time0;
+	printf( "img1 ssift = %gus\n", time0/(cvGetTickFrequency()) );
+	
 	fprintf( stderr, "Finding features in %s...\n", img2_file );
+	time1 = (double)cvGetTickCount();
 	n2 = ssift_features( img2, &feat2 );
+	time1 = ((double)cvGetTickCount()) - time1;
+	printf( "img2 ssift = %gus\n", time1/(cvGetTickFrequency()) );
+	time2 = (double)cvGetTickCount();
 	kd_root = kdtree_build( feat2, n2 );
 	for( i = 0; i < n1; i++ )
 	{
@@ -67,10 +80,6 @@ int main( int argc, char** argv )
 			d1 = descr_dist_sq( feat, nbrs[1] );
 			if( d0 < d1 * NN_SQ_DIST_RATIO_THR )
 			{
-				pt1 = cvPoint( cvRound( feat->x ), cvRound( feat->y ) );
-				pt2 = cvPoint( cvRound( nbrs[0]->x ), cvRound( nbrs[0]->y ) );
-				pt2.y += img1->height;
-				cvLine( stacked, pt1, pt2, CV_RGB(255,0,255), 1, 8, 0 );
 				m++;
 				feat1[i].fwd_match = nbrs[0];
 			}
@@ -78,41 +87,34 @@ int main( int argc, char** argv )
 		free( nbrs );
 	}
 
-	fprintf( stderr, "Found %d total matches\n", m );
-	cvNamedWindow( "Matches", 1 );
-	cvShowImage( "Matches", stacked );
-	cvWaitKey( 0 );
-
-
-	/* 
-	UNCOMMENT BELOW TO SEE HOW RANSAC FUNCTION WORKS
-
-	Note that this line above:
-
-	feat1[i].fwd_match = nbrs[0];
-
-	is important for the RANSAC function to work.
-	*/
-	/*
 	{
 		CvMat* H;
 		H = ransac_xform( feat1, n1, FEATURE_FWD_MATCH, lsq_homog, 4, 0.01,
-			homog_xfer_err, 3.0, NULL, NULL );
+			homog_xfer_err, 3.0, &inliers,&n_inliers );
+		time2 = ((double)cvGetTickCount()) - time2;
+		printf( "match = %gus\n", time2/(cvGetTickFrequency()) );
 		if( H )
 		{
-			IplImage* xformed;
-			xformed = cvCreateImage( cvGetSize( img2 ), IPL_DEPTH_8U, 3 );
-			cvWarpPerspective( img1, xformed, H, 
-				CV_INTER_LINEAR + CV_WARP_FILL_OUTLIERS,
-				cvScalarAll( 0 ) );
-			cvNamedWindow( "Xformed", 1 );
-			cvShowImage( "Xformed", xformed );
-			cvWaitKey( 0 );
-			cvReleaseImage( &xformed );
-			cvReleaseMat( &H );
+
+			int i;
+			for( i = 0; i<n_inliers; i++)
+			{
+				feat = inliers[i];
+				pt1 = cvPoint(cvRound(feat->x), cvRound(feat->y));
+				pt2 = cvPoint(cvRound(feat->fwd_match->x), cvRound(feat->fwd_match->y));
+      
+				pt2.y += img1->height;
+				cvLine(stacked,pt1,pt2,CV_RGB(255,0,255),1,8,0);
+			}
+
 		}
 	}
-	*/
+
+	fprintf( stderr, "Found %d total matches\n", m );
+	cvNamedWindow( "Matches", CV_WINDOW_NORMAL );
+	cvShowImage( "Matches", stacked );
+
+	cvWaitKey( 0 );	
 
 	cvReleaseImage( &stacked );
 	cvReleaseImage( &img1 );

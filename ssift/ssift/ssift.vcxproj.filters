@@ -67,5 +67,11 @@
     <Image Include="..\..\..\..\..\Desktop\资料文档\sift学习资料汇总\sift\sift-latest_win\sift-1.1.2_20101207_win\beaver_xform.png">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="1.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="2.jpg">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>
