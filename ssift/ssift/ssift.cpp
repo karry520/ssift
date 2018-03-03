@@ -1,11 +1,11 @@
 /*****************************************************************************
 Copyright:		2016-2017, Likaiyun
 File name:		ssift.cpp
-Description:	ÌØÕ÷µãÌáÈ¡¡¢´æ´¢
-Author:			Àî¿ªÔË
+Description:	ç‰¹å¾ç‚¹æå–ã€å­˜å‚¨
+Author:			æå¼€è¿
 Version:		0.1
-Date:			Íê³ÉÈÕÆÚ
-History:ĞŞ¸ÄÀúÊ·¼ÇÂ¼ÁĞ±í£¬ Ã¿ÌõĞŞ¸Ä¼ÇÂ¼Ó¦°üÀ¨ĞŞ¸ÄÈÕÆÚ¡¢ĞŞ¸ÄÕß¼°ĞŞ¸ÄÄÚÈİ¼òÊö¡£
+Date:			å®Œæˆæ—¥æœŸ
+History:ä¿®æ”¹å†å²è®°å½•åˆ—è¡¨ï¼Œ æ¯æ¡ä¿®æ”¹è®°å½•åº”åŒ…æ‹¬ä¿®æ”¹æ—¥æœŸã€ä¿®æ”¹è€…åŠä¿®æ”¹å†…å®¹ç®€è¿°ã€‚
 *****************************************************************************/
 
 #include "ssift.h"
@@ -17,84 +17,84 @@ History:ĞŞ¸ÄÀúÊ·¼ÇÂ¼ÁĞ±í£¬ Ã¿ÌõĞŞ¸Ä¼ÇÂ¼Ó¦°üÀ¨ĞŞ¸ÄÈÕÆÚ¡¢ĞŞ¸ÄÕß¼°ĞŞ¸ÄÄÚÈİ¼òÊö¡£
 
 #include <stdio.h>
 double t1 = 0,t2 = 0,t3 = 0;
-/*****************************±¾µØº¯ÊıÔ­ĞÍ**********************************/ 
+/*****************************æœ¬åœ°å‡½æ•°åŸå‹**********************************/ 
 
-//³õÊ¼»¯ÊäÈëÍ¼Ïñ
+//åˆå§‹åŒ–è¾“å…¥å›¾åƒ
 static IplImage* create_init_img( IplImage*, int, double );
-//½«ÊäÈëÍ¼Ïñ×ª»»Îª32Î»»Ò¶ÈÍ¼,²¢½øĞĞ¹éÒ»»¯
+//å°†è¾“å…¥å›¾åƒè½¬æ¢ä¸º32ä½ç°åº¦å›¾,å¹¶è¿›è¡Œå½’ä¸€åŒ–
 static IplImage* convert_to_gray32( IplImage* );
-//¹¹½¨¸ßË¹½ğ×ÖËş
+//æ„å»ºé«˜æ–¯é‡‘å­—å¡”
 static IplImage*** build_gauss_pyr( IplImage*, int, int, double );
-//Í¼Ïñ½µ²ÉÑù
+//å›¾åƒé™é‡‡æ ·
 static IplImage* downsample( IplImage* );
-//¹¹½¨¸ßË¹²î·Ö½ğ×ÖËş
+//æ„å»ºé«˜æ–¯å·®åˆ†é‡‘å­—å¡”
 static IplImage*** build_dog_pyr( IplImage***, int, int );
-//³ß¶È¿Õ¼ä¼«Öµ¼ì²â
+//å°ºåº¦ç©ºé—´æå€¼æ£€æµ‹
 static CvSeq* scale_space_extrema( IplImage***, int, int, double, int, CvMemStorage*);
-//Ì½²âÏñËØµãÊÇ·ñÊÇÁÚÓò·¶Î§ÄÚµÄ¼«Öµµã
+//æ¢æµ‹åƒç´ ç‚¹æ˜¯å¦æ˜¯é‚»åŸŸèŒƒå›´å†…çš„æå€¼ç‚¹
 static int is_extremum( IplImage***, int, int, int, int );
-//²åÖµÊµÏÖ¼«Öµµã¾«È·¶¨Î»
+//æ’å€¼å®ç°æå€¼ç‚¹ç²¾ç¡®å®šä½
 static struct feature* interp_extremum( IplImage***, int, int, int, int, int, double);
-//½øĞĞÒ»´Î¼«Öµµã²åÖµ£¬¼ÆËãx£¬y£¬¦Ò·½Ïò(²ã·½Ïò)ÉÏµÄ×ÓÏñËØÆ«ÒÆ
+//è¿›è¡Œä¸€æ¬¡æå€¼ç‚¹æ’å€¼ï¼Œè®¡ç®—xï¼Œyï¼ŒÏƒæ–¹å‘(å±‚æ–¹å‘)ä¸Šçš„å­åƒç´ åç§»
 static void interp_step( IplImage***, int, int, int, int, double*, double*, double* );
-//ÔÚDoG½ğ×ÖËşÖĞ¼ÆËãÏñËØµÄx·½Ïò¡¢y·½ÏòÒÔ¼°³ß¶È·½ÏòÉÏµÄÆ«µ¼
+//åœ¨DoGé‡‘å­—å¡”ä¸­è®¡ç®—åƒç´ çš„xæ–¹å‘ã€yæ–¹å‘ä»¥åŠå°ºåº¦æ–¹å‘ä¸Šçš„åå¯¼
 static CvMat* deriv_3D( IplImage***, int, int, int, int );
-//ÏñËØµãµÄ3*3º£É­¾ØÕó
+//åƒç´ ç‚¹çš„3*3æµ·æ£®çŸ©é˜µ
 static CvMat* hessian_3D( IplImage***, int, int, int, int );
-//¼ÆËã±»²åÖµµãµÄ¶Ô±È¶È
+//è®¡ç®—è¢«æ’å€¼ç‚¹çš„å¯¹æ¯”åº¦
 static double interp_contr( IplImage***, int, int, int, int, double, double, double );
-//´´½¨Ò»¸öfeatureÀàĞÍµÄ½á¹¹Ìå
+//åˆ›å»ºä¸€ä¸ªfeatureç±»å‹çš„ç»“æ„ä½“
 static struct feature* new_feature( void );
-//ÅĞ¶ÏÄ³µãÊÇ·ñ±ßÔµµã
+//åˆ¤æ–­æŸç‚¹æ˜¯å¦è¾¹ç¼˜ç‚¹
 static int is_too_edge_like( IplImage*, int, int, int );
-//¼ÆËãÌØÕ÷µãĞòÁĞÖĞÃ¿¸öÌØÕ÷µãµÄ³ß¶È
+//è®¡ç®—ç‰¹å¾ç‚¹åºåˆ—ä¸­æ¯ä¸ªç‰¹å¾ç‚¹çš„å°ºåº¦
 static void calc_feature_scales( CvSeq*, double, int );
-//½«ÌØÕ÷µãĞòÁĞÖĞÃ¿¸öÌØÕ÷µãµÄ×ø±ê¼õ°ë
+//å°†ç‰¹å¾ç‚¹åºåˆ—ä¸­æ¯ä¸ªç‰¹å¾ç‚¹çš„åæ ‡å‡åŠ
 static void adjust_for_img_dbl( CvSeq* );
-//¼ÆËãÌØÕ÷µãµÄÌİ¶ÈÖ±·½Í¼
+//è®¡ç®—ç‰¹å¾ç‚¹çš„æ¢¯åº¦ç›´æ–¹å›¾
 static void calc_feature_oris( CvSeq*, IplImage*** );
-//¶ÔÏñËØµã½øĞĞÖ±·½Í³¼Æ
+//å¯¹åƒç´ ç‚¹è¿›è¡Œç›´æ–¹ç»Ÿè®¡
 static double* ori_hist( IplImage*, int, int, int, int, double );
-//¼ÆËãÖ¸¶¨µãµÄÌİ¶ÈµÄ·ùÖµmagnitudeºÍ·½Ïòorientation
+//è®¡ç®—æŒ‡å®šç‚¹çš„æ¢¯åº¦çš„å¹…å€¼magnitudeå’Œæ–¹å‘orientation
 static int calc_grad_mag_ori( IplImage*, int, int, double*, double* );
-//¶ÔÌİ¶È·½ÏòÖ±·½Í¼½øĞĞ¸ßË¹Æ½»¬
+//å¯¹æ¢¯åº¦æ–¹å‘ç›´æ–¹å›¾è¿›è¡Œé«˜æ–¯å¹³æ»‘
 static void smooth_ori_hist( double*, int );
-//¹Ø¼üµãÖ÷·½Ïò
+//å…³é”®ç‚¹ä¸»æ–¹å‘
 static double dominant_ori( double*, int );
-//Ìí¼Ó¸¨·½Ïò
+//æ·»åŠ è¾…æ–¹å‘
 static void add_good_ori_features( CvSeq*, double*, int, double, struct feature* );
-//copy featureÀàĞÍµÄ½á¹¹Ìå
+//copy featureç±»å‹çš„ç»“æ„ä½“
 static struct feature* clone_feature( struct feature* );
-//¼ÆËãÌØÕ÷ÃèÊö×ÓÏòÁ¿
+//è®¡ç®—ç‰¹å¾æè¿°å­å‘é‡
 static void compute_descriptors( CvSeq*, IplImage***);
-//¼ÆËãÌØÕ÷µã¸½½üÇøÓòµÄ·½ÏòÖ±·½Í¼
+//è®¡ç®—ç‰¹å¾ç‚¹é™„è¿‘åŒºåŸŸçš„æ–¹å‘ç›´æ–¹å›¾
 static double* descr_hist( IplImage*, int, int, double);
 static void interp_hist_entry( double***, double, double, double, double, int, int);
-//½«¹Ø¼üµãÁÚÓòÍ³¼ÆÌİ¶ÈÌİ¶ÈÖ±·½Í¼×ª»¯ÎªÃèÊö×ÓÏòÁ¿
+//å°†å…³é”®ç‚¹é‚»åŸŸç»Ÿè®¡æ¢¯åº¦æ¢¯åº¦ç›´æ–¹å›¾è½¬åŒ–ä¸ºæè¿°å­å‘é‡
 static void hist_to_descr( double*,struct feature* );
-//¹éÒ»»¯ÃèÊö×ÓÏòÁ¿
+//å½’ä¸€åŒ–æè¿°å­å‘é‡
 static void normalize_descr( struct feature* );
-//ÌØÕ÷µã°´³ß¶ÈµÄ½µĞòÅÅÁĞÊ±ÓÃµ½µÄ±È½Ïº¯Êı
+//ç‰¹å¾ç‚¹æŒ‰å°ºåº¦çš„é™åºæ’åˆ—æ—¶ç”¨åˆ°çš„æ¯”è¾ƒå‡½æ•°
 static int feature_cmp( void*, void*, void* );
-//ÊÍ·Å·½ÏòÖ±·½Í¼´æ´¢¿Õ¼ä
+//é‡Šæ”¾æ–¹å‘ç›´æ–¹å›¾å­˜å‚¨ç©ºé—´
 static void release_descr_hist( double* );
-//ÊÍ·ÅÍ¼Ïñ½ğ×ÖËş´æ´¢¿Õ¼ä
+//é‡Šæ”¾å›¾åƒé‡‘å­—å¡”å­˜å‚¨ç©ºé—´
 static void release_pyr( IplImage****, int, int );
 
-/*****************************º¯ÊıÉùÃ÷ ssift.h*******************************/ 
+/*****************************å‡½æ•°å£°æ˜ ssift.h*******************************/ 
 
 /*****************************************************************************
 Function:		// ssift_features
-Description:	// ÌáÈ¡Í¼ÏñÌØÕ÷µã
+Description:	// æå–å›¾åƒç‰¹å¾ç‚¹
 Calls:			// _ssift_features
 Called By:		// imgFeat.main
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @img		±»ÌáÈ¡ÌØÕ÷µãµÄÍ¼Ïñ
-				// @feat	ÌáÈ¡µ½µÄÌØÕ÷µã´æ´¢ÆäÖĞ
-Output:			// ÌáÈ¡µ½µÄÌØÕ÷µãÊıÁ¿
-Return:			// ÆäËü£ºÌáÈ¡Ê§°Ü	ÕıÕûÊı£ºÌØÕ÷µãÊıÁ¿ 
-Others:			// ÎŞ
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @img		è¢«æå–ç‰¹å¾ç‚¹çš„å›¾åƒ
+				// @feat	æå–åˆ°çš„ç‰¹å¾ç‚¹å­˜å‚¨å…¶ä¸­
+Output:			// æå–åˆ°çš„ç‰¹å¾ç‚¹æ•°é‡
+Return:			// å…¶å®ƒï¼šæå–å¤±è´¥	æ­£æ•´æ•°ï¼šç‰¹å¾ç‚¹æ•°é‡ 
+Others:			// æ— 
 *****************************************************************************/
 
 int ssift_features( IplImage* img, struct feature** feat )
@@ -105,39 +105,39 @@ int ssift_features( IplImage* img, struct feature** feat )
 
 /*****************************************************************************
 Function:		// _ssift_features
-Description:	// ÌáÈ¡Í¼ÏñÌØÕ÷µã
-Calls:			// create_init_img¡¢build_gauss_pyr¡¢
-				// build_dog_pyr¡¢scale_space_extrema¡¢
-				// calc_feature_scales¡¢compute_descriptors¡¢
-				// cvReleaseMemStorage¡¢release_pyr¡¢
-				// adjust_for_img_dbl¡¢cvReleaseImage¡¢
-				// log¡¢cvCreateMemStorage¡¢
+Description:	// æå–å›¾åƒç‰¹å¾ç‚¹
+Calls:			// create_init_imgã€build_gauss_pyrã€
+				// build_dog_pyrã€scale_space_extremaã€
+				// calc_feature_scalesã€compute_descriptorsã€
+				// cvReleaseMemStorageã€release_pyrã€
+				// adjust_for_img_dblã€cvReleaseImageã€
+				// logã€cvCreateMemStorageã€
 Called By:		// ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @img			±»ÌáÈ¡ÌØÕ÷µãµÄÍ¼Ïñ
-				// @feat		ÌáÈ¡µ½µÄÌØÕ÷µã´æ´¢ÆäÖĞ
-				// @intvls		³ß¶È¿Õ¼äÖĞÃ¿×é·ÖÎª¶àÉÙ²ã
-				// @sigma		³õÊ¼Í¼ÏñµÄ³ß¶È£¨¸ßË¹Æ½»¬µÄ¦Ò²ÎÊı£©
-				// @contr_thr	¶Ô±È¶ÈãĞÖµ
-				// @curv_thr	Ïû³ı±ßÔµĞ§Ó¦Ê±ËùÓÃµÄ±ÈÖµ
-				// @img_dbl		ÊÇ·ñ±¶ÔöÍ¼ÏñµÄ²ÎÊı
-Output:			// ÌáÈ¡µ½µÄÌØÕ÷µãÊıÁ¿
-Return:			// ÆäËü£ºÌáÈ¡Ê§°Ü	ÕıÕûÊı£ºÌØÕ÷µãÊıÁ¿ 
-Others:			// ÎŞ
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @img			è¢«æå–ç‰¹å¾ç‚¹çš„å›¾åƒ
+				// @feat		æå–åˆ°çš„ç‰¹å¾ç‚¹å­˜å‚¨å…¶ä¸­
+				// @intvls		å°ºåº¦ç©ºé—´ä¸­æ¯ç»„åˆ†ä¸ºå¤šå°‘å±‚
+				// @sigma		åˆå§‹å›¾åƒçš„å°ºåº¦ï¼ˆé«˜æ–¯å¹³æ»‘çš„Ïƒå‚æ•°ï¼‰
+				// @contr_thr	å¯¹æ¯”åº¦é˜ˆå€¼
+				// @curv_thr	æ¶ˆé™¤è¾¹ç¼˜æ•ˆåº”æ—¶æ‰€ç”¨çš„æ¯”å€¼
+				// @img_dbl		æ˜¯å¦å€å¢å›¾åƒçš„å‚æ•°
+Output:			// æå–åˆ°çš„ç‰¹å¾ç‚¹æ•°é‡
+Return:			// å…¶å®ƒï¼šæå–å¤±è´¥	æ­£æ•´æ•°ï¼šç‰¹å¾ç‚¹æ•°é‡ 
+Others:			// æ— 
 *****************************************************************************/
 int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 					double sigma, double contr_thr, int curv_thr,
 					int img_dbl )
 {
-	//¶¨Òå±äÁ¿
+	//å®šä¹‰å˜é‡
 	IplImage* init_img;
 	IplImage*** gauss_pyr, *** dog_pyr;
 	CvMemStorage* storage;
 	CvSeq* features;
 	int octvs,i,n = 0;
 
-	//¼ì²é²ÎÊı
+	//æ£€æŸ¥å‚æ•°
 	if( ! img )
 		fatal_error( "NULL pointer error, %s, line %d",  __FILE__, __LINE__ );
 
@@ -145,7 +145,7 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 		fatal_error( "NULL pointer error, %s, line %d",  __FILE__, __LINE__ );
 
 	t1 = (double)cvGetTickCount();
-	//µÚÁã²½£º´¦ÀíÍ¼Æ¬¡¢¹¹½¨³ß¶È¿Õ¼ä
+	//ç¬¬é›¶æ­¥ï¼šå¤„ç†å›¾ç‰‡ã€æ„å»ºå°ºåº¦ç©ºé—´
 	init_img = create_init_img( img, img_dbl, sigma );
 	octvs = log( MIN( init_img->width, init_img->height ) ) / log(2) - 2;
 	gauss_pyr = build_gauss_pyr( init_img, octvs, intvls, sigma );
@@ -154,7 +154,7 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	printf( "step 1 = %gus\n", t1/(cvGetTickFrequency()) );	
 
 	t2 = (double)cvGetTickCount();
-	//µÚÒ»²½£º¼«Öµ¼ì²â 
+	//ç¬¬ä¸€æ­¥ï¼šæå€¼æ£€æµ‹ 
 	storage = cvCreateMemStorage( 0 );
 	features = scale_space_extrema( dog_pyr, octvs, intvls, contr_thr,
 		curv_thr, storage );
@@ -165,7 +165,7 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	t2 = ((double)cvGetTickCount()) - t2;
 	printf( "step 2 = %gus\n", t2/(cvGetTickFrequency()) );	
 
-	//µÚ¶ş²½£ºÌØÕ÷ÏòÁ¿
+	//ç¬¬äºŒæ­¥ï¼šç‰¹å¾å‘é‡
 	t3 = (double)cvGetTickCount();
 	calc_feature_oris( features, gauss_pyr );
 
@@ -180,7 +180,7 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 	}
 	t3 = ((double)cvGetTickCount()) - t3;
 	printf( "step 3 = %gus\n", t3/(cvGetTickFrequency()) );	
-	//ÊÍ·ÅÄÚ´æ¿Õ¼ä
+	//é‡Šæ”¾å†…å­˜ç©ºé—´
 	cvReleaseMemStorage( &storage );
 	cvReleaseImage( &init_img );
 	release_pyr( &gauss_pyr, octvs, intvls + 3 );
@@ -190,28 +190,28 @@ int _ssift_features( IplImage* img, struct feature** feat, int intvls,
 }
 
 
-/*****************************±¾µØº¯ÊıÉùÃ÷*******************************/ 
+/*****************************æœ¬åœ°å‡½æ•°å£°æ˜*******************************/ 
 
 /*****************************************************************************
 Function:		// create_init_img
-Description:	// Í¼Ïñ³õÊ¼»¯´¦Àí
-Calls:			// convert_to_gray32¡¢cvCreateImage¡¢cvSmooth¡¢cvResize¡¢cvReleaseImage
+Description:	// å›¾åƒåˆå§‹åŒ–å¤„ç†
+Calls:			// convert_to_gray32ã€cvCreateImageã€cvSmoothã€cvResizeã€cvReleaseImage
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @img		ÊäÈëµÄÍ¼Ïñ
-				// @img_dbl	ÊäÈëÍ¼ÏñÊÇ·ñ±¶Ôö
-				// @sigma	Í¼Ïñ³õÊ¼³ß¶È
-Output:			// ÎŞ
-Return:			// ³õÊ¼»¯ºóµÄÍ¼Ïñ 
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @img		è¾“å…¥çš„å›¾åƒ
+				// @img_dbl	è¾“å…¥å›¾åƒæ˜¯å¦å€å¢
+				// @sigma	å›¾åƒåˆå§‹å°ºåº¦
+Output:			// æ— 
+Return:			// åˆå§‹åŒ–åçš„å›¾åƒ 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static IplImage* create_init_img( IplImage* img, int img_dbl, double sigma )
 {
 	IplImage* gray, * dbl;
 	float sig_diff;
 
-	//½«Í¼Ïñ×ª»¯Îª32Î»»Ò¶ÈÍ¼
+	//å°†å›¾åƒè½¬åŒ–ä¸º32ä½ç°åº¦å›¾
 	gray = convert_to_gray32( img );
 	if( img_dbl )
 	{
@@ -235,15 +235,15 @@ static IplImage* create_init_img( IplImage* img, int img_dbl, double sigma )
 
 /*****************************************************************************
 Function:		// convert_to_gray32
-Description:	// ½«Í¼Ïñ×ª»¯Îª32Î»»Ò¶ÈÍ¼
-Calls:			// cvCreateImage¡¢cvClone¡¢cvCvtColor¡¢cvConvertScale
+Description:	// å°†å›¾åƒè½¬åŒ–ä¸º32ä½ç°åº¦å›¾
+Calls:			// cvCreateImageã€cvCloneã€cvCvtColorã€cvConvertScale
 Called By:		// create_init_img
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// ĞèÒª×ª»¯µÄÍ¼ÏñÖ¸Õë
-Output:			// ÎŞ
-Return:			// ×ª»¯ºóµÄ32Î»»Ò¶ÈÍ¼
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// éœ€è¦è½¬åŒ–çš„å›¾åƒæŒ‡é’ˆ
+Output:			// æ— 
+Return:			// è½¬åŒ–åçš„32ä½ç°åº¦å›¾
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static IplImage* convert_to_gray32( IplImage* img )
 {
@@ -266,18 +266,18 @@ static IplImage* convert_to_gray32( IplImage* img )
 
 /*****************************************************************************
 Function:		// build_gauss_pyr
-Description:	// ¹¹½¨¸ßË¹Í¼Ïñ½ğ×ÖËş
-Calls:			// pow¡¢sqrt¡¢cvCloneImage¡¢downsample¡¢cvSmooth¡¢cvCreateImage
+Description:	// æ„å»ºé«˜æ–¯å›¾åƒé‡‘å­—å¡”
+Calls:			// powã€sqrtã€cvCloneImageã€downsampleã€cvSmoothã€cvCreateImage
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @base	³õÊ¼»¯ºóµÄ32Î»»Ò¶ÈÍ¼Ïñ 
-				// @octvs	½ğ×ÖËş·Ö¶àÉÙ×é
-				// @intvls	Ã¿×é¶àÉÙ²ã
-				// @sigma	Í¼Ïñ³õÊ¼³ß¶È
-Output:			// ÎŞ
-Return:			// ¸ßË¹Í¼Ïñ½ğ×ÖËşÖ¸Õë
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @base	åˆå§‹åŒ–åçš„32ä½ç°åº¦å›¾åƒ 
+				// @octvs	é‡‘å­—å¡”åˆ†å¤šå°‘ç»„
+				// @intvls	æ¯ç»„å¤šå°‘å±‚
+				// @sigma	å›¾åƒåˆå§‹å°ºåº¦
+Output:			// æ— 
+Return:			// é«˜æ–¯å›¾åƒé‡‘å­—å¡”æŒ‡é’ˆ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static IplImage*** build_gauss_pyr( IplImage* base, int octvs,
 								   int intvls, double sigma )
@@ -327,15 +327,15 @@ static IplImage*** build_gauss_pyr( IplImage* base, int octvs,
 
 /*****************************************************************************
 Function:		// downsample
-Description:	// Í¼Ïñ½µ²ÉÑù
-Calls:			// cvCreateImage¡¢cvResize
+Description:	// å›¾åƒé™é‡‡æ ·
+Calls:			// cvCreateImageã€cvResize
 Called By:		// build_gauss_pyr
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// ĞèÒª½µ²ÉÑùµÄÍ¼ÏñÖ¸Õë
-Output:			// ÎŞ
-Return:			// ½µ²ÉÑùºóµÄÍ¼Ïñ
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// éœ€è¦é™é‡‡æ ·çš„å›¾åƒæŒ‡é’ˆ
+Output:			// æ— 
+Return:			// é™é‡‡æ ·åçš„å›¾åƒ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static IplImage* downsample( IplImage* img )
 {
@@ -349,15 +349,15 @@ static IplImage* downsample( IplImage* img )
 
 /*****************************************************************************
 Function:		// build_dog_pyr
-Description:	// ¹¹½¨¸ßË¹²î·Ö½ğ×ÖËş 
+Description:	// æ„å»ºé«˜æ–¯å·®åˆ†é‡‘å­—å¡” 
 Calls:			// cvCreateImage
-Called By:		// _ssift_features¡¢cvSub
-Table Accessed: // ±»·ÃÎÊµÄ±í£¨´ËÏî½ö¶ÔÓÚÇ£³¶µ½Êı¾İ¿â²Ù×÷µÄ³ÌĞò£©
-Table Updated:	// ±»ĞŞ¸ÄµÄ±í£¨´ËÏî½ö¶ÔÓÚÇ£³¶µ½Êı¾İ¿â²Ù×÷µÄ³ÌĞò£©
-Input:			// ÊäÈë²ÎÊıËµÃ÷£¬°üÀ¨Ã¿¸ö²ÎÊıµÄ×÷// ÓÃ¡¢È¡ÖµËµÃ÷¼°²ÎÊı¼ä¹ØÏµ
-Output:			// ¶ÔÊä³ö²ÎÊıµÄËµÃ÷
-Return:			// º¯Êı·µ»ØÖµµÄËµÃ÷
-Others:			// ÆäËüËµÃ÷
+Called By:		// _ssift_featuresã€cvSub
+Table Accessed: // è¢«è®¿é—®çš„è¡¨ï¼ˆæ­¤é¡¹ä»…å¯¹äºç‰µæ‰¯åˆ°æ•°æ®åº“æ“ä½œçš„ç¨‹åºï¼‰
+Table Updated:	// è¢«ä¿®æ”¹çš„è¡¨ï¼ˆæ­¤é¡¹ä»…å¯¹äºç‰µæ‰¯åˆ°æ•°æ®åº“æ“ä½œçš„ç¨‹åºï¼‰
+Input:			// è¾“å…¥å‚æ•°è¯´æ˜ï¼ŒåŒ…æ‹¬æ¯ä¸ªå‚æ•°çš„ä½œ// ç”¨ã€å–å€¼è¯´æ˜åŠå‚æ•°é—´å…³ç³»
+Output:			// å¯¹è¾“å‡ºå‚æ•°çš„è¯´æ˜
+Return:			// å‡½æ•°è¿”å›å€¼çš„è¯´æ˜
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static IplImage*** build_dog_pyr( IplImage*** gauss_pyr, int octvs, int intvls )
 {
@@ -381,19 +381,19 @@ static IplImage*** build_dog_pyr( IplImage*** gauss_pyr, int octvs, int intvls )
 
 /*****************************************************************************
 Function:		// scale_space_extrema
-Description:	// ³ß¶È¿Õ¼ä¼«Öµ¼ì²â£¬½«¼ì²âµ½µÄ¼«Öµµã¼ÓÈëµ½CvSeqĞòÁĞÖĞ
-Calls:			// cvCreateSeq¡¢is_extremum¡¢is_too_edge_like¡¢cvSeqPush
+Description:	// å°ºåº¦ç©ºé—´æå€¼æ£€æµ‹ï¼Œå°†æ£€æµ‹åˆ°çš„æå€¼ç‚¹åŠ å…¥åˆ°CvSeqåºåˆ—ä¸­
+Calls:			// cvCreateSeqã€is_extremumã€is_too_edge_likeã€cvSeqPush
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		×éÊı
-				// @intvls		²ãÊı
-				// @contr_thr	¶Ô±È¶ÈãĞÖµ£¬È¥³ı²»ÎÈ¶¨ÌØÕ÷
-				// @curv_thr	Ïû³ı±ßÔµÏìÓ¦Ê±ËùÓÃµÄ±ÈÖµ
-Output:			// ÎŞ
-Return:			// ÕÒµ½µÄÌØÕ÷µã´æ´¢ĞòÁĞ
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		ç»„æ•°
+				// @intvls		å±‚æ•°
+				// @contr_thr	å¯¹æ¯”åº¦é˜ˆå€¼ï¼Œå»é™¤ä¸ç¨³å®šç‰¹å¾
+				// @curv_thr	æ¶ˆé™¤è¾¹ç¼˜å“åº”æ—¶æ‰€ç”¨çš„æ¯”å€¼
+Output:			// æ— 
+Return:			// æ‰¾åˆ°çš„ç‰¹å¾ç‚¹å­˜å‚¨åºåˆ—
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static CvSeq* scale_space_extrema( IplImage*** dog_pyr, int octvs, int intvls,
 								   double contr_thr, int curv_thr,
@@ -410,16 +410,16 @@ static CvSeq* scale_space_extrema( IplImage*** dog_pyr, int octvs, int intvls,
 		for( i = 1; i <= intvls; i++ )
 			for(r = SSIFT_IMG_BORDER; r < dog_pyr[o][0]->height-SSIFT_IMG_BORDER; r++)
 				for(c = SSIFT_IMG_BORDER; c < dog_pyr[o][0]->width-SSIFT_IMG_BORDER; c++)
-					/* ÏñËØµãµÄ¶Ô±È¶È´óÓÚãĞÖµ */
+					/* åƒç´ ç‚¹çš„å¯¹æ¯”åº¦å¤§äºé˜ˆå€¼ */
 					if( ABS( pixval32f( dog_pyr[o][i], r, c ) ) > prelim_contr_thr )
 						if( is_extremum( dog_pyr, o, i, r, c ) )
 						{
-							/* ¼«Öµµã¾«È·¶¨Î» */
+							/* æå€¼ç‚¹ç²¾ç¡®å®šä½ */
 							feat = interp_extremum(dog_pyr, o, i, r, c, intvls, contr_thr);
 							if( feat )
 							{
 								ddata = feat_detection_data( feat );
-								/* Ïû³ı±ßÔµÏìÓ¦µã */
+								/* æ¶ˆé™¤è¾¹ç¼˜å“åº”ç‚¹ */
 								if( ! is_too_edge_like( dog_pyr[ddata->octv][ddata->intvl],
 									ddata->r, ddata->c, curv_thr ) )
 								{
@@ -436,26 +436,26 @@ static CvSeq* scale_space_extrema( IplImage*** dog_pyr, int octvs, int intvls,
 
 /*****************************************************************************
 Function:		// is_extremum
-Description:	// ÅĞ¶Ï¸ø¶¨µãÊÇ·ñÊÇ¼«Öµµã£¨ÊÇ·ñÊÇÖÜ±ß26¸öµãÖĞµÄ×î´ó×îĞ¡£©
-Calls:			// pixval32f¡¢
+Description:	// åˆ¤æ–­ç»™å®šç‚¹æ˜¯å¦æ˜¯æå€¼ç‚¹ï¼ˆæ˜¯å¦æ˜¯å‘¨è¾¹26ä¸ªç‚¹ä¸­çš„æœ€å¤§æœ€å°ï¼‰
+Calls:			// pixval32fã€
 Called By:		// scale_space_extrema
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-Output:			// ÎŞ
-Return:			// ×î´ó»ò×îĞ¡Öµ·µ»Ø0 ÆäËü·µ»Ø·Ç0
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+Output:			// æ— 
+Return:			// æœ€å¤§æˆ–æœ€å°å€¼è¿”å›0 å…¶å®ƒè¿”å›é0
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static int is_extremum( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 {
 	float val = pixval32f( dog_pyr[octv][intvl], r, c );
 	int i, j, k;
 
-	/* ¼ì²éÊÇ·ñÊÇ×î´óÖµ */
+	/* æ£€æŸ¥æ˜¯å¦æ˜¯æœ€å¤§å€¼ */
 	if( val > 0 )
 	{
 		for( i = -1; i <= 1; i++ )
@@ -465,7 +465,7 @@ static int is_extremum( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 						return 0;
 	}
 
-	/* ¼ì²éÊÇ·ñÊÇ×îĞ¡Öµ */
+	/* æ£€æŸ¥æ˜¯å¦æ˜¯æœ€å°å€¼ */
 	else
 	{
 		for( i = -1; i <= 1; i++ )
@@ -482,21 +482,21 @@ static int is_extremum( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 
 /*****************************************************************************
 Function:		// interp_extremum
-Description:	// ²åÖµÄâºÏ£¬¼«Öµµã¾«È·¶¨Î»
-Calls:			// interp_step¡¢interp_contr
+Description:	// æ’å€¼æ‹Ÿåˆï¼Œæå€¼ç‚¹ç²¾ç¡®å®šä½
+Calls:			// interp_stepã€interp_contr
 Called By:		// scale_space_extrema
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-				// @intvls		½ğ×ÖËşÃ¿×éµÄµ¼Êı
-				// @contr_thr	¶Ô±È¶ÈãĞÖµ£¬È¥³ı²»ÎÈ¶¨ÌØÕ÷
-Output:			// ÎŞ
-Return:			// ·µ»Ø¾«È·¶¨Î»ºóµÄÌØÕ÷µã½á¹¹Ìå
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+				// @intvls		é‡‘å­—å¡”æ¯ç»„çš„å¯¼æ•°
+				// @contr_thr	å¯¹æ¯”åº¦é˜ˆå€¼ï¼Œå»é™¤ä¸ç¨³å®šç‰¹å¾
+Output:			// æ— 
+Return:			// è¿”å›ç²¾ç¡®å®šä½åçš„ç‰¹å¾ç‚¹ç»“æ„ä½“
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static struct feature* interp_extremum( IplImage*** dog_pyr, int octv, int intvl,
 										int r, int c, int intvls, double contr_thr )
@@ -552,22 +552,22 @@ static struct feature* interp_extremum( IplImage*** dog_pyr, int octv, int intvl
 
 /*****************************************************************************
 Function:		// interp_step
-Description:	// Ã¿Ò»²½ÄâºÏµÄ²Ù×÷
-Calls:			// deriv_3D¡¢hessian_3D¡¢cvCreateMat¡¢cvInvert¡¢cvGEMM¡¢cvReleaseMat
+Description:	// æ¯ä¸€æ­¥æ‹Ÿåˆçš„æ“ä½œ
+Calls:			// deriv_3Dã€hessian_3Dã€cvCreateMatã€cvInvertã€cvGEMMã€cvReleaseMat
 Called By:		// interp_extremum
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-				// @xi			ÏñËØµã²ã·½ÏòÉÏµÄÆ«ÒÆÁ¿
-				// @xr			ÏñËØµãĞĞ·½ÏòÉÏµÄÆ«ÒÆÁ¿
-				// @xc			ÏñËØµãÁĞ·½ÏòÉÏµÄÆ«ÒÆÁ¿
-Output:			// ÎŞ
-Return:			// ·µ»ØÈıÎ¬·½ÏòÉÏµÄÆ«ÒÆÁ¿
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+				// @xi			åƒç´ ç‚¹å±‚æ–¹å‘ä¸Šçš„åç§»é‡
+				// @xr			åƒç´ ç‚¹è¡Œæ–¹å‘ä¸Šçš„åç§»é‡
+				// @xc			åƒç´ ç‚¹åˆ—æ–¹å‘ä¸Šçš„åç§»é‡
+Output:			// æ— 
+Return:			// è¿”å›ä¸‰ç»´æ–¹å‘ä¸Šçš„åç§»é‡
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 
 static void interp_step( IplImage*** dog_pyr, int octv, int intvl, int r, int c,
@@ -594,19 +594,19 @@ static void interp_step( IplImage*** dog_pyr, int octv, int intvl, int r, int c,
 
 /*****************************************************************************
 Function:		// deriv_3D
-Description:	// Ã¿Ò»²½ÄâºÏµÄ²Ù×÷¼ÆËã¸ßË¹²îÏñËØµãÔÚĞĞ¡¢ÁĞ¡¢²ãÈı¸ö·½ÏòÉÏµÄÆ«µ¼
-Calls:			// pixval32f¡¢cvCreateMat¡¢cvmSet
+Description:	// æ¯ä¸€æ­¥æ‹Ÿåˆçš„æ“ä½œè®¡ç®—é«˜æ–¯å·®åƒç´ ç‚¹åœ¨è¡Œã€åˆ—ã€å±‚ä¸‰ä¸ªæ–¹å‘ä¸Šçš„åå¯¼
+Calls:			// pixval32fã€cvCreateMatã€cvmSet
 Called By:		// interp_step
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-Output:			// ÎŞ
-Return:			// ·µ»ØÓÉÏñËØµãÔÚĞĞ¡¢ÁĞ¡¢²ãÈı¸ö·½ÏòÉÏµÄÆ«µ¼¹¹³ÉµÄ¾ØÕó
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+Output:			// æ— 
+Return:			// è¿”å›ç”±åƒç´ ç‚¹åœ¨è¡Œã€åˆ—ã€å±‚ä¸‰ä¸ªæ–¹å‘ä¸Šçš„åå¯¼æ„æˆçš„çŸ©é˜µ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static CvMat* deriv_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 {
@@ -630,19 +630,19 @@ static CvMat* deriv_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 
 /*****************************************************************************
 Function:		// hessian_3D
-Description:	// ¼ÆËãÏñËØµãµÄ3*3µÄº£É­¾ØÕó
-Calls:			// pixval32f¡¢cvCreateMat¡¢cvmSet
+Description:	// è®¡ç®—åƒç´ ç‚¹çš„3*3çš„æµ·æ£®çŸ©é˜µ
+Calls:			// pixval32fã€cvCreateMatã€cvmSet
 Called By:		// interp_step
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-Output:			// ÎŞ
-Return:			// ·µ»ØÓÉÏñËØµãµÄº£É­¾ØÕó
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+Output:			// æ— 
+Return:			// è¿”å›ç”±åƒç´ ç‚¹çš„æµ·æ£®çŸ©é˜µ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static CvMat* hessian_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c )
 {
@@ -685,22 +685,22 @@ static CvMat* hessian_3D( IplImage*** dog_pyr, int octv, int intvl, int r, int c
 
 /*****************************************************************************
 Function:		// interp_contr
-Description:	// ¼ÆËã±»²åÖµºóÏñËØµãµÄ¶Ô±È¶È
-Calls:			// cvInitMatHeader¡¢deriv_3D¡¢cvGEMM¡¢cvReleaseMat¡¢pixval32f
+Description:	// è®¡ç®—è¢«æ’å€¼ååƒç´ ç‚¹çš„å¯¹æ¯”åº¦
+Calls:			// cvInitMatHeaderã€deriv_3Dã€cvGEMMã€cvReleaseMatã€pixval32f
 Called By:		// scale_space_extrema
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @octvs		ËùÔÚ×éÊı
-				// @intvls		ËùÔÚ²ãÊı
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-				// @xi			ÏñËØµã²ã·½ÏòÉÏµÄÆ«ÒÆÁ¿
-				// @xr			ÏñËØµãĞĞ·½ÏòÉÏµÄÆ«ÒÆÁ¿
-				// @xc			ÏñËØµãÁĞ·½ÏòÉÏµÄÆ«ÒÆÁ¿
-Output:			// ÎŞ
-Return:			// ·µ»ØÓÉÏñËØµãµÄº£É­¾ØÕó
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @octvs		æ‰€åœ¨ç»„æ•°
+				// @intvls		æ‰€åœ¨å±‚æ•°
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+				// @xi			åƒç´ ç‚¹å±‚æ–¹å‘ä¸Šçš„åç§»é‡
+				// @xr			åƒç´ ç‚¹è¡Œæ–¹å‘ä¸Šçš„åç§»é‡
+				// @xc			åƒç´ ç‚¹åˆ—æ–¹å‘ä¸Šçš„åç§»é‡
+Output:			// æ— 
+Return:			// è¿”å›ç”±åƒç´ ç‚¹çš„æµ·æ£®çŸ©é˜µ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static double interp_contr( IplImage*** dog_pyr, int octv, int intvl, int r,
 							int c, double xi, double xr, double xc )
@@ -719,15 +719,15 @@ static double interp_contr( IplImage*** dog_pyr, int octv, int intvl, int r,
 
 /*****************************************************************************
 Function:		// new_feature
-Description:	// ´´½¨Ò»¸öĞÂµÄÌØÕ÷µã(feature)½á¹¹Ìå
-Calls:			// cvInitMatHeader¡¢deriv_3D¡¢cvGEMM¡¢cvReleaseMat¡¢pixval32f
+Description:	// åˆ›å»ºä¸€ä¸ªæ–°çš„ç‰¹å¾ç‚¹(feature)ç»“æ„ä½“
+Calls:			// cvInitMatHeaderã€deriv_3Dã€cvGEMMã€cvReleaseMatã€pixval32f
 Called By:		// scale_space_extrema
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// ÎŞ
-Output:			// ÎŞ
-Return:			// ·µ»ØÒÑ·ÖÅä´æ´¢¿Õ¼äµÄ½á¹¹ÌåÊ×µØÖ·
-Others:			// ÆäËüËµÃ÷
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// æ— 
+Output:			// æ— 
+Return:			// è¿”å›å·²åˆ†é…å­˜å‚¨ç©ºé—´çš„ç»“æ„ä½“é¦–åœ°å€
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static struct feature* new_feature( void )
 {
@@ -745,24 +745,24 @@ static struct feature* new_feature( void )
 
 /*****************************************************************************
 Function:		// is_too_edge_like
-Description:	// Ïû³ı²»ÎÈ¶¨µÄ±ßÔµÏìÓ¦µã
-Calls:			// pixval32f¡¢
+Description:	// æ¶ˆé™¤ä¸ç¨³å®šçš„è¾¹ç¼˜å“åº”ç‚¹
+Calls:			// pixval32fã€
 Called By:		// scale_space_extrema
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @dog_pyr		¸ßË¹²î·Ö½ğ×ÖËş
-				// @r			ËùÔÚĞĞ
-				// @c			ËùÔÚÁĞ
-				// @curv_thr	Ö÷ÇúÂÊ±ÈÖµ
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @dog_pyr		é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
+				// @r			æ‰€åœ¨è¡Œ
+				// @c			æ‰€åœ¨åˆ—
+				// @curv_thr	ä¸»æ›²ç‡æ¯”å€¼
 Output:			// 
-Return:			// 0£º·Ç±ßÔµµã 1£º±ßÔµµã
-Others:			// ÆäËüËµÃ÷
+Return:			// 0ï¼šéè¾¹ç¼˜ç‚¹ 1ï¼šè¾¹ç¼˜ç‚¹
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static int is_too_edge_like( IplImage* dog_img, int r, int c, int curv_thr )
 {
 	double d, dxx, dyy, dxy, tr, det;
 
-	/* Ö÷ÇúÂÊÓëº£É­¾ØÕóµÄÌØÕ÷Öµ³ÉÕı±È */
+	/* ä¸»æ›²ç‡ä¸æµ·æ£®çŸ©é˜µçš„ç‰¹å¾å€¼æˆæ­£æ¯” */
 	d = pixval32f(dog_img, r, c);
 	dxx = pixval32f( dog_img, r, c+1 ) + pixval32f( dog_img, r, c-1 ) - 2 * d;
 	dyy = pixval32f( dog_img, r+1, c ) + pixval32f( dog_img, r-1, c ) - 2 * d;
@@ -771,10 +771,10 @@ static int is_too_edge_like( IplImage* dog_img, int r, int c, int curv_thr )
 	tr = dxx + dyy;
 	det = dxx * dyy - dxy * dxy;
 
-	/* ÓëÖ÷ÇúÂÊÓĞ²»Í¬µÄ·ûºÅ */
+	/* ä¸ä¸»æ›²ç‡æœ‰ä¸åŒçš„ç¬¦å· */
 	if( det <= 0 )
 		return 1;
-	/* Í¨¹ı±ÈÖµÅĞ¶Ï */
+	/* é€šè¿‡æ¯”å€¼åˆ¤æ–­ */
 	if( tr * tr / det < ( curv_thr + 1.0 )*( curv_thr + 1.0 ) / curv_thr )
 		return 0;
 	return 1;
@@ -782,17 +782,17 @@ static int is_too_edge_like( IplImage* dog_img, int r, int c, int curv_thr )
 
 /*****************************************************************************
 Function:		// calc_feature_scales
-Description:	// ¼ÆËãÌØÕ÷µãµÄ³ß¶È
+Description:	// è®¡ç®—ç‰¹å¾ç‚¹çš„å°ºåº¦
 Calls:			// CV_GET_SEQ_ELEM
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @features	ÌØÕ÷µãĞòÁĞ
-				// @sigma		Í¼Ïñ³õÊ¼³ß¶È
-				// @intvls		Ã¿×é·Öintvls²ã
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @features	ç‰¹å¾ç‚¹åºåˆ—
+				// @sigma		å›¾åƒåˆå§‹å°ºåº¦
+				// @intvls		æ¯ç»„åˆ†intvlså±‚
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void calc_feature_scales( CvSeq* features, double sigma, int intvls )
 {
@@ -814,15 +814,15 @@ static void calc_feature_scales( CvSeq* features, double sigma, int intvls )
 
 /*****************************************************************************
 Function:		// adjust_for_img_dbl
-Description:	// ËõĞ¡1±¶Í¼Æ¬µÄ²ÎÊı
+Description:	// ç¼©å°1å€å›¾ç‰‡çš„å‚æ•°
 Calls:			// CV_GET_SEQ_ELEM
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @features	ÌØÕ÷µãĞòÁĞ
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @features	ç‰¹å¾ç‚¹åºåˆ—
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void adjust_for_img_dbl( CvSeq* features )
 {
@@ -832,7 +832,7 @@ static void adjust_for_img_dbl( CvSeq* features )
   	n = features->total;
   	for( i = 0; i < n; i++ )
     {
-    	//´ÓĞòÁĞÖĞ»ñÈ¡Ò»¸öfeatureÀàĞÍµÄÔªËØ
+    	//ä»åºåˆ—ä¸­è·å–ä¸€ä¸ªfeatureç±»å‹çš„å…ƒç´ 
       	feat = CV_GET_SEQ_ELEM( struct feature, features, i );
       	feat->x /= 2.0;
       	feat->y /= 2.0;
@@ -843,16 +843,16 @@ static void adjust_for_img_dbl( CvSeq* features )
 }
 /*****************************************************************************
 Function:		// calc_feature_oris
-Description:	// ¼ÆËãÍ¼ÏñÌØÕ÷µãµÄ·½ÏòºÍÃèÊö·û
-Calls:			// cvSeqPopFront¡¢ori_hist¡¢dominant_ori¡¢add_good_ori_features
+Description:	// è®¡ç®—å›¾åƒç‰¹å¾ç‚¹çš„æ–¹å‘å’Œæè¿°ç¬¦
+Calls:			// cvSeqPopFrontã€ori_histã€dominant_oriã€add_good_ori_features
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @features	ÌØÕ÷µãĞòÁĞ
-				// @gauss_pyr	¸ßË¹²î·Ö½ğ×ÖËş
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @features	ç‰¹å¾ç‚¹åºåˆ—
+				// @gauss_pyr	é«˜æ–¯å·®åˆ†é‡‘å­—å¡”
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void calc_feature_oris( CvSeq* features, IplImage*** gauss_pyr )
 {
@@ -886,15 +886,15 @@ static void calc_feature_oris( CvSeq* features, IplImage*** gauss_pyr )
 
 /*****************************************************************************
 Function:		// ori_hist
-Description:	// ¼ÆËãÌØÕ÷µã·½ÏòÖ±·½Í¼
-Calls:			// calc_grad_mag_ori¡¢cvRound
+Description:		// è®¡ç®—ç‰¹å¾ç‚¹æ–¹å‘ç›´æ–¹å›¾
+Calls:			// calc_grad_mag_oriã€cvRound
 Called By:		// calc_feature_oris
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @features	ÌØÕ÷µãĞòÁĞ
+Table Accessed: 	// æ— 
+Table Updated:		// æ— 
+Input:			// @features	ç‰¹å¾ç‚¹åºåˆ—
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sigma)
 {
@@ -919,19 +919,19 @@ static double* ori_hist( IplImage* img, int r, int c, int n, int rad, double sig
 
 /*****************************************************************************
 Function:		// calc_grad_mag_ori
-Description:	// ¼ÆËãÏñËØµãµÄÄ£ÖµºÍ·½Ïò
-Calls:			// pixval32f¡¢sqrt¡¢atan2
+Description:	// è®¡ç®—åƒç´ ç‚¹çš„æ¨¡å€¼å’Œæ–¹å‘
+Calls:			// pixval32fã€sqrtã€atan2
 Called By:		// calc_feature_oris
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @img		ÌØÕ÷µãĞòÁĞ
-				// @r		ÌØÕ÷µãĞĞ
-				// @c		ÌØÕ÷µãÁĞ
-				// @mag		½«¼ÆËãºóµÄÄ£Öµ´æÈëÆäÖĞ
-				// @ori		½«¼ÆËãºóµÄ·½Ïò´æÈëÆäÖĞ
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @img		ç‰¹å¾ç‚¹åºåˆ—
+				// @r		ç‰¹å¾ç‚¹è¡Œ
+				// @c		ç‰¹å¾ç‚¹åˆ—
+				// @mag		å°†è®¡ç®—åçš„æ¨¡å€¼å­˜å…¥å…¶ä¸­
+				// @ori		å°†è®¡ç®—åçš„æ–¹å‘å­˜å…¥å…¶ä¸­
 Output:			// 
-Return:			// ¼ÆËã³É¹¦·µ»Ø 1		ÆäËü·µ»Ø 0
-Others:			// ÆäËüËµÃ÷
+Return:			// è®¡ç®—æˆåŠŸè¿”å› 1		å…¶å®ƒè¿”å› 0
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* ori )
 {
@@ -952,16 +952,16 @@ static int calc_grad_mag_ori( IplImage* img, int r, int c, double* mag, double* 
 
 /*****************************************************************************
 Function:		// smooth_ori_hist
-Description:	// ¸ßË¹Æ½»¬·½ÏòÖ±·½Í¼
-Calls:			// ÎŞ
+Description:	// é«˜æ–¯å¹³æ»‘æ–¹å‘ç›´æ–¹å›¾
+Calls:			// æ— 
 Called By:		// calc_feature_oris
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @hist	·½ÏòÖ±·½Í¼ 
-				// n		Ö±·½Í¼µÄÎ¬Êı
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @hist	æ–¹å‘ç›´æ–¹å›¾ 
+				// n		ç›´æ–¹å›¾çš„ç»´æ•°
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void smooth_ori_hist( double* hist, int n )
 {
@@ -980,16 +980,16 @@ static void smooth_ori_hist( double* hist, int n )
 
 /*****************************************************************************
 Function:		// dominant_ori
-Description:	// ¼ÆËãÖ±·½Í¼ÖĞ×î´óµÄÖµ 
-Calls:			// ÎŞ
+Description:	// è®¡ç®—ç›´æ–¹å›¾ä¸­æœ€å¤§çš„å€¼ 
+Calls:			// æ— 
 Called By:		// calc_feature_oris
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @hist	Ö±·½Í¼ 
-				// @n		Ö±·½Í¼µÄÎ¬Êı
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @hist	ç›´æ–¹å›¾ 
+				// @n		ç›´æ–¹å›¾çš„ç»´æ•°
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static double dominant_ori( double* hist, int n )
 {
@@ -1008,25 +1008,25 @@ static double dominant_ori( double* hist, int n )
 }
 
 /*
-	²åÖµ	
+	æ’å€¼	
 */
 #define interp_hist_peak( l, c, r ) ( 0.5 * ((l)-(r)) / ((l) - 2.0*(c) + (r)) )
 
 /*****************************************************************************
 Function:		// add_good_ori_features
-Description:	// ½«ºÃµÄÌØÕ÷µã·½Ïò¼°ÃèÊö×ÓÌí¼ÓÖÁÌØÕ÷µãĞòÁĞÖĞ
-Calls:			// interp_hist_peak¡¢clone_feature¡¢hist_to_descr
+Description:	// å°†å¥½çš„ç‰¹å¾ç‚¹æ–¹å‘åŠæè¿°å­æ·»åŠ è‡³ç‰¹å¾ç‚¹åºåˆ—ä¸­
+Calls:			// interp_hist_peakã€clone_featureã€hist_to_descr
 Called By:		// calc_feature_oris
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @features	ÌØÕ÷µãĞòÁĞ
-				// @hist		Ö±·½Í¼
-				// @n			Ö±·½Í¼µÄÎ¬Êı
-				// @mag_thr		Ä£ÖµãĞÖµ
-				// @feat		ÌØÕ÷µã½á¹¹
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @features	ç‰¹å¾ç‚¹åºåˆ—
+				// @hist		ç›´æ–¹å›¾
+				// @n			ç›´æ–¹å›¾çš„ç»´æ•°
+				// @mag_thr		æ¨¡å€¼é˜ˆå€¼
+				// @feat		ç‰¹å¾ç‚¹ç»“æ„
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void add_good_ori_features( CvSeq* features, double* hist, int n,
 								   double mag_thr, struct feature* feat )
@@ -1057,16 +1057,16 @@ static void add_good_ori_features( CvSeq* features, double* hist, int n,
 
 /*****************************************************************************
 Function:		// hist_to_descr
-Description:	// ½«Ö±·½Í¼×÷ÎªÏòÁ¿´æÈëÌØÕ÷µã½á¹¹ÌåÖĞ
+Description:	// å°†ç›´æ–¹å›¾ä½œä¸ºå‘é‡å­˜å…¥ç‰¹å¾ç‚¹ç»“æ„ä½“ä¸­
 Calls:			// normalize_descr
 Called By:		// add_good_ori_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @hist	Ö±·½Í¼ 
-				// @feat	ÌØÕ÷µã½á¹¹Ìå
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @hist	ç›´æ–¹å›¾ 
+				// @feat	ç‰¹å¾ç‚¹ç»“æ„ä½“
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void hist_to_descr( double* hist,struct feature* feat)
 {
@@ -1088,16 +1088,16 @@ static void hist_to_descr( double* hist,struct feature* feat)
 	}
 }
 /*****************************************************************************
-Function:		// normalize_descr¡¢
-Description:	// ¹éÒ»»¯
-Calls:			// ÎŞ
+Function:		// normalize_descrã€
+Description:	// å½’ä¸€åŒ–
+Calls:			// æ— 
 Called By:		// hist_to_descr
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @feat	ÌØÕ÷µã½á¹¹Ìå
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @feat	ç‰¹å¾ç‚¹ç»“æ„ä½“
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void normalize_descr( struct feature* feat )
 {
@@ -1116,15 +1116,15 @@ static void normalize_descr( struct feature* feat )
 
 /*****************************************************************************
 Function:		// clone_feature
-Description:	// ¸´ÖÆÒ»¸öÌØÕ÷µã
-Calls:			// ÎŞ
+Description:	// å¤åˆ¶ä¸€ä¸ªç‰¹å¾ç‚¹
+Calls:			// æ— 
 Called By:		// add_good_ori_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @feat	ÌØÕ÷µã½á¹¹Ìå
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @feat	ç‰¹å¾ç‚¹ç»“æ„ä½“
 Output:			// 
-Return:			// ¸´ÖÆºóµÄÌØÕ÷µãÖ¸Õë
-Others:			// ÆäËüËµÃ÷
+Return:			// å¤åˆ¶åçš„ç‰¹å¾ç‚¹æŒ‡é’ˆ
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static struct feature* clone_feature( struct feature* feat )
 {
@@ -1142,17 +1142,17 @@ static struct feature* clone_feature( struct feature* feat )
 
 /*****************************************************************************
 Function:		// release_pyr
-Description:	// ÊÍ·Å½ğ×ÖËş¿Õ¼ä
+Description:	// é‡Šæ”¾é‡‘å­—å¡”ç©ºé—´
 Calls:			// cvReleaseImage
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @pyr		ĞèÒªÊÍ·ÅµÄ½ğ×ÖËşÖ¸Õë 
-				// @octvs	½ğ×ÖËş·ÖÎª¶àÉÙ×é
-				// @n		Ã¿×éµÄÍ¼ÏñÊı
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @pyr		éœ€è¦é‡Šæ”¾çš„é‡‘å­—å¡”æŒ‡é’ˆ 
+				// @octvs	é‡‘å­—å¡”åˆ†ä¸ºå¤šå°‘ç»„
+				// @n		æ¯ç»„çš„å›¾åƒæ•°
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static void release_pyr( IplImage**** pyr, int octvs, int n )
 {
@@ -1169,17 +1169,17 @@ static void release_pyr( IplImage**** pyr, int octvs, int n )
 
 /*****************************************************************************
 Function:		// feature_cmp
-Description:	// ±È½ÏÌØÕ÷µãµÄ³ß¶ÈÅÅĞòÓÃ
-Calls:			// ÎŞ
+Description:	// æ¯”è¾ƒç‰¹å¾ç‚¹çš„å°ºåº¦æ’åºç”¨
+Calls:			// æ— 
 Called By:		// _ssift_features
-Table Accessed: // ÎŞ
-Table Updated:	// ÎŞ
-Input:			// @feat1		ÌØÕ÷µã1
-				// @feat2		ÌØÕ÷µã2
-				// @param		±È½ÏÊ±»Øµ÷º¯Êı
+Table Accessed: // æ— 
+Table Updated:	// æ— 
+Input:			// @feat1		ç‰¹å¾ç‚¹1
+				// @feat2		ç‰¹å¾ç‚¹2
+				// @param		æ¯”è¾ƒæ—¶å›è°ƒå‡½æ•°
 Output:			// 
-Return:			// ÎŞ
-Others:			// ÆäËüËµÃ÷
+Return:			// æ— 
+Others:			// å…¶å®ƒè¯´æ˜
 *****************************************************************************/
 static int feature_cmp( void* feat1, void* feat2, void* param )
 {
